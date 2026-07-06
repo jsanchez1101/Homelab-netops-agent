@@ -70,7 +70,7 @@ See [`TOPOLOGY.md`](TOPOLOGY.md) for the addressing plan and lab build steps.
 
 ## Design notes
 
-- **The allowlist is the security boundary, and it lives in code, not the
+- **The allowlist is the security boundary. It lives in code, not the
   prompt.** The model is treated as untrusted input: even if it emits a
   configuration command or is prompt-injected by device output, the executor
   refuses anything that isn't a read-only `show`. Same trust model as
