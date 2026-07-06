@@ -1,0 +1,14 @@
+# Model endpoint (OpenAI-compatible).
+# Ollama on the Mac, reached over Tailscale from node1.
+# REPLACE 100.x.x.x with the Mac's Tailscale IP (run `tailscale ip -4` on the Mac).
+base_url: http://127.0.0.1:11434/v1
+model: "qwen2.5:3b"
+api_key: ollama
+
+# --- Fallback: cheap cloud API for tasks 3B can't handle. Uncomment + fill in. ---
+# base_url: https://api.openai.com/v1
+# model: "deepseek-chat"
+# api_key: YOUR_API_KEY
+
+max_iterations: 8
+max_tool_output_chars: 2000
