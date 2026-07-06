@@ -1,0 +1,74 @@
+# Eval benchmark for the VyOS OSPF Triangle (TOPOLOGY.md). Ground truth is
+# derived from the designed configs — spot-check 2-3 against the live lab.
+tasks:
+  - id: t01
+    difficulty: easy
+    task: "How many OSPF neighbors does R1 have?"
+    check: contains
+    expect: "2"
+
+  - id: t02
+    difficulty: easy
+    task: "What VyOS version is R2 running? Give the version string."
+    check: regex
+    expect: "\\d+\\.\\d+|rolling|current"
+
+  - id: t03
+    difficulty: easy
+    task: "Is interface eth1 on R1 up or down?"
+    check: contains
+    expect: "up"
+
+  - id: t04
+    difficulty: easy
+    task: "What is R3's OSPF router ID?"
+    check: contains
+    expect: "3.3.3.3"
+
+  - id: t05
+    difficulty: medium
+    task: "What routing protocol is running on R1, and what router ID is it using?"
+    check: contains_all
+    expect: ["ospf", "1.1.1.1"]
+
+  - id: t06
+    difficulty: medium
+    task: "Which router is the OSPF DR on the link between R1 and R2? Name the device."
+    check: contains
+    expect: "R2"
+
+  - id: t07
+    difficulty: medium
+    task: "How many routes in R2's routing table were learned via OSPF? Give just the count."
+    check: regex
+    expect: "\\b3\\b"
+
+  - id: t08
+    difficulty: medium
+    task: "What is the IP address of R3's interface that connects to R2?"
+    check: contains
+    expect: "10.0.23.2"
+
+  - id: t09
+    difficulty: hard
+    task: "Can R1 reach R2's loopback 2.2.2.2 according to its routing table? Answer yes or no, and name the next-hop IP."
+    check: contains_all
+    expect: ["yes", "10.0.12.2"]
+
+  - id: t10
+    difficulty: hard
+    task: "Do the OSPF hello and dead timers on the R1-R2 link match between the two routers? Answer 'match' or 'mismatch' and give the values."
+    check: contains_all
+    expect: ["match", "10", "40"]
+
+  - id: t11
+    difficulty: hard
+    task: "If the link between R1 and R2 went down, would R1 still have a path to 2.2.2.2? Answer yes or no and explain via which router."
+    check: contains_all
+    expect: ["yes", "R3"]
+
+  - id: t12
+    difficulty: hard
+    task: "List the router IDs of all OSPF routers in area 0. Give all three."
+    check: contains_all
+    expect: ["1.1.1.1", "2.2.2.2", "3.3.3.3"]

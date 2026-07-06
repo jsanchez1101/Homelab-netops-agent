@@ -1,0 +1,21 @@
+# VyOS "OSPF Triangle" (see TOPOLOGY.md). Mgmt assumes 192.168.86.0/24 —
+# verify with `ip route | grep default` on node1 and adjust here + configs/.
+devices:
+  R1:
+    host: "10.99.0.11"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 1.1.1.1, links to R2 (eth1) and R3 (eth2)"
+  R2:
+    host: "10.99.0.12"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 2.2.2.2, links to R1 (eth1) and R3 (eth2)"
+  R3:
+    host: "10.99.0.13"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 3.3.3.3, links to R2 (eth1) and R1 (eth2)"

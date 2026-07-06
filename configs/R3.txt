@@ -1,0 +1,20 @@
+configure
+set system host-name R3
+set interfaces loopback lo address 3.3.3.3/32
+set interfaces ethernet eth0 description 'MGMT - home LAN via Cloud0'
+set interfaces ethernet eth0 address 10.99.0.13/24
+set interfaces ethernet eth1 description 'to R2'
+set interfaces ethernet eth1 address 10.0.23.2/30
+set interfaces ethernet eth2 description 'to R1'
+set interfaces ethernet eth2 address 10.0.13.2/30
+set protocols ospf parameters router-id 3.3.3.3
+set protocols ospf area 0 network 10.0.23.0/30
+set protocols ospf area 0 network 10.0.13.0/30
+set protocols ospf area 0 network 3.3.3.3/32
+set protocols ospf interface eth0 passive
+set service ssh port 22
+set system login user admin authentication plaintext-password <PASSWORD>
+set protocols static route 0.0.0.0/0 next-hop 10.99.0.1
+commit
+save
+exit
