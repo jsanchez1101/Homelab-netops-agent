@@ -145,7 +145,7 @@ and ideally shrink that spread as well. A negative result is also a result.
 ## Setup
 
 ```bash
-# 1. Serve the model (on the machine with a GPU)
+# 1. Serve the model (on a machine with a GPU)
 ollama pull qwen2.5:3b
 OLLAMA_HOST=0.0.0.0 ollama serve
 
