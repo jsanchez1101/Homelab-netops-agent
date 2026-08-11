@@ -96,7 +96,7 @@ agent will work.
 
 ## Checklist before evals
 
-- [ ] ssh admin@ each of .151/.152/.153 from node1
-- [ ] R1 shows 2 Full neighbors
-- [ ] R2 shows 3 OSPF routes
-- [ ] devices.yaml IPs match reality
+- [x] ssh admin@ each of .151/.152/.153 from node1
+- [x] R1 shows 2 Full neighbors
+- [x] R2 shows 3 OSPF routes
+- [x] devices.yaml IPs match reality
