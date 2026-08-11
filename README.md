@@ -114,7 +114,7 @@ character limit; smarter truncation is an open improvement.
 - [x] Agent loop, tool-calling, read-only allowlist
 - [x] 3-router VyOS OSPF lab (EVE-NG, Tailscale-routed management plane)
 - [x] 12-task benchmark with programmatic ground truth — baseline 8/12
-- [ ] Scaffold iteration: t03-class syntax gaps, t09/t10 checker fixes
+- [x] Scaffold iteration: t03-class syntax gaps, t09/t10 checker fixes
 - [ ] Teacher distillation: collect verified trajectories, LoRA fine-tune
       qwen2.5:3b, reload into Ollama, report before/after on the same benchmark
 
