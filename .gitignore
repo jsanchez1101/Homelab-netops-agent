@@ -4,3 +4,4 @@ __pycache__/
 trajectories/*.jsonl
 devices.yaml
 eval_runs.json
+PLAN.md
