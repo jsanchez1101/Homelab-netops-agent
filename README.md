@@ -2,7 +2,7 @@
 
 A framework-free local LLM agent that answers network-operations questions from live VyOS evidence. Qwen2.5-3B selects code-allowlisted, read-only commands; the executor runs them over SSH against a three-router OSPF lab; and the model grounds its answer in the returned device output.
 
-**Result:** a frozen 10-run benchmark improved from **7.1 ± 0.74 / 12** with base Qwen2.5-3B to **7.9 ± 0.32 / 12** after LoRA fine-tuning. Mean delta: **+0.8 tasks** (95% CI: +0.3 to +1.3).
+**Result:** a frozen 10-run benchmark improved from **7.1 ± 0.74 / 12** with base Qwen2.5-3B to **7.9 ± 0.32 / 12** after LoRA (Low Rank Adaptation) fine-tuning. Mean delta: **+0.8 tasks** (95% CI: +0.3 to +1.3).
 
 ## How it works
 
