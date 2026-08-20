@@ -1,0 +1,86 @@
+{
+  "captured_at": "2026-08-18T13:02:00-04:00",
+  "runtime": {
+    "platform": "Google Colab",
+    "gpu": "Tesla T4",
+    "gpu_memory_mb": 15360
+  },
+  "software": {
+    "unsloth": "2026.8.18",
+    "transformers": "4.56.2",
+    "trl": "0.22.2",
+    "torch": "2.10.0+cu128",
+    "xformers": "0.0.34",
+    "triton": "3.6.0"
+  },
+  "data": {
+    "source_file": "vyos_sft_data.jsonl",
+    "sha256": "8a7687bdebe298290751b9727d224af14634f64c314a14ec1bfce7b3e4686b5b",
+    "source_records": 59,
+    "train_records": 51,
+    "validation_records": 8,
+    "split_seed": 3407,
+    "assistant_only_loss": true,
+    "tool_schema_injected": true
+  },
+  "model": {
+    "base_model": "unsloth/Qwen2.5-3B-Instruct-bnb-4bit",
+    "max_sequence_length": 3072,
+    "load_in_4bit": true,
+    "trainable_parameters": 14966784,
+    "total_parameters": 3100905472,
+    "trainable_percent": 0.48
+  },
+  "lora": {
+    "rank": 8,
+    "alpha": 16,
+    "dropout": 0.0,
+    "bias": "none",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "gradient_checkpointing": "unsloth",
+    "rslora": false
+  },
+  "training": {
+    "epochs": 3,
+    "optimizer_steps": 39,
+    "per_device_batch_size": 1,
+    "gradient_accumulation_steps": 4,
+    "effective_batch_size": 4,
+    "learning_rate": 0.0001,
+    "warmup_ratio": 0.05,
+    "optimizer": "adamw_8bit",
+    "weight_decay": 0.01,
+    "lr_scheduler": "linear",
+    "seed": 3407,
+    "fp16": true,
+    "bf16": false,
+    "packing": false,
+    "runtime_seconds": 254.3689
+  },
+  "epoch_metrics": [
+    {
+      "epoch": 1,
+      "training_loss": 0.0333,
+      "validation_loss": 0.060545191168785095
+    },
+    {
+      "epoch": 2,
+      "training_loss": 0.02,
+      "validation_loss": 0.03744914382696152
+    },
+    {
+      "epoch": 3,
+      "training_loss": 0.027,
+      "validation_loss": 0.0348782017827034
+    }
+  ],
+  "status": "training_complete; GGUF export verified; local Ollama deployment complete; frozen post-training evaluation complete"
+}
