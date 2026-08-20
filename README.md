@@ -1,188 +1,200 @@
 # Homelab NetOps Agent
 
-A local LLM agent that operates a virtualized network lab over SSH. A 3B model
-(qwen2.5, served locally via Ollama) selects read-only `show` commands, executes
-them against VyOS routers via netmiko, and reasons over the output. No API calls,
-no cloud inference, no per-token cost.
+A framework-free local LLM agent that answers network-operations questions from live VyOS evidence. Qwen2.5-3B selects code-allowlisted, read-only commands; the executor runs them over SSH against a three-router OSPF lab; and the model grounds its answer in the returned device output.
 
-Baseline: **8.0 ± 1.22 / 12** across 5 runs of a 12-task benchmark against the
-running lab.
-
----
+**Result:** a frozen 10-run benchmark improved from **7.1 ± 0.74 / 12** with base Qwen2.5-3B to **7.9 ± 0.32 / 12** after LoRA fine-tuning. Mean delta: **+0.8 tasks** (95% CI: +0.3 to +1.3).
 
 ## How it works
 
-```
-  "How many OSPF neighbors does R1 have?"
+```text
+"How many OSPF neighbors does R1 have?"
                  │
                  ▼
-        ┌──────────────────┐   model emits a tool call
-        │  qwen2.5:3b      │   run_show_command(R1, "show ip ospf neighbor")
-        │  (local, Ollama) │
-        └────────┬─────────┘
-                 │  JSON
-                 ▼
-        ┌──────────────────┐   allowlist check, then SSH
-        │  agent.py        │   (read-only `show` commands only)
-        │  (~200 lines)    │
+        ┌──────────────────┐   emits a structured tool call
+        │  Qwen2.5-3B      │   run_show_command(R1,
+        │  local / Ollama  │     "show ip ospf neighbor")
         └────────┬─────────┘
                  │
+                 ▼
+        ┌──────────────────┐   validates device and command
+        │  agent.py        │   against code-level allowlists
+        └────────┬─────────┘
+                 │ SSH
                  ▼
         ┌──────────────────┐
-        │  R1 (VyOS)       │──▶ live neighbor table
-        └──────────────────┘
+        │  VyOS router     │──▶ live command output
+        └────────┬─────────┘
                  │
                  ▼
-        "R1 has 2 OSPF neighbors (2.2.2.2, 3.3.3.3)."
+        Evidence-grounded answer
 ```
 
-No agent framework. System prompt plus tool schemas go to the model; the model
-returns a tool call; the executor validates it against a read-only allowlist and
-runs it; output is appended to context; repeat until the model answers in plain
-text or hits an iteration cap. Every run is logged as a trajectory (JSONL).
+No agent framework is used. The system prompt and tool schemas go to the model; the model returns a tool call; the executor validates it, runs it, and appends the output to context. The loop ends when the model answers in plain text or reaches an iteration cap. Runs are logged as JSONL trajectories for evaluation and fine-tuning.
 
 ## Architecture
 
-```
+```text
 Mac (M2)              node1 (Ubuntu)          node2 (EVE-NG)
 Ollama serving   ◀──▶ agent.py           ──▶ R1 ── R2
-qwen2.5:3b            run_evals.py            │  ╲  │   VyOS OSPF
-(Metal, ~40 tok/s)    run_evals_multi.py      │   ╲ │   triangle
+Qwen2.5-3B            run_evals.py            │  ╲  │
+or qwen2.5-vyos       run_evals_multi.py      │   ╲ │  OSPF area 0
                       export_sft.py           R3 ───┘
-     └────────── Tailscale mesh ──────────────┘
-        management plane: 10.99.0.0/24 routed via node2
+     └────────── private Tailscale management plane ──────────┘
 ```
 
-Three VyOS routers in an OSPF area-0 triangle inside EVE-NG. Router management
-sits on an isolated `10.99.0.0/24` subnet advertised into a Tailscale mesh by
-node2, so the lab is reachable across the tailnet without exposing it to the home
-LAN. Addressing and build steps in [`TOPOLOGY.md`](TOPOLOGY.md).
+Three VyOS routers form an OSPF area-0 triangle inside EVE-NG. The management subnet is routed through a private Tailscale mesh, keeping model inference and device access local. Addressing and lab build steps are documented in [TOPOLOGY.md](TOPOLOGY.md).
 
-## Baseline results
+## Security boundaries
 
-12 tasks, ground truth derived from the topology and checked programmatically
-(exact or regex match against the model's answer).
+- **The model is treated as untrusted input.** The executor—not the prompt—enforces the device and command allowlists.
+- **Read-only commands only.** Hallucinated configuration commands and unsupported command forms are rejected before SSH execution.
+- **Local inference.** Ollama serves the model inside the private network; no device output is sent to a hosted model API.
+- **Dedicated lab credentials.** The agent does not authenticate as root. VyOS privilege levels still allow configuration mode, so the code-level command boundary remains the primary control.
+- **Bounded context.** Device output and loop iterations are capped to prevent one verbose command from consuming the model context.
+- **Sanitized training data.** Published artifacts contain metrics and hashes, not topology-bearing trajectories or credentials.
 
-A 3B model at temperature 0.2 varies meaningfully run to run, so the benchmark is
-executed 5× and reported as a distribution rather than a single score.
+## Evaluation
 
-**8.0 ± 1.22 / 12 (67%)** — range 6–9 across 5 runs.
+The benchmark contains 12 tasks with frozen prompts, graders, and ground truth. Every reported result is a distribution across 10 runs against the same live lab at temperature 0.2.
 
-| Task stability | Tasks | Count |
-|---|---|---|
-| Stable pass (5/5) | t01, t02, t03, t06, t12 | 5 |
-| Flaky (1–4 of 5) | t04, t05, t07, t08, t09, t10 | 6 |
-| Stable fail (0/5) | t11 | 1 |
+| Model | Mean score | Standard deviation | Range |
+|---|---:|---:|---:|
+| Qwen2.5-3B baseline | 7.1 / 12 | 0.74 | 6–8 |
+| LoRA fine-tuned Q4_K_M | **7.9 / 12** | **0.32** | 7–8 |
 
-A single run is not a measurement. Identical runs of this benchmark scored
-between 6 and 9, so comparing one run against another cannot distinguish a real
-change from noise. `run_evals_multi.py` reports mean, standard deviation, and
-per-task pass rate, and flags when a session-over-session delta is smaller than
-the observed run-to-run spread.
+The mean improved by **0.8 tasks** (11.3%). A normal-approximation 95% confidence interval for the delta is **+0.3 to +1.3 tasks**.
 
-Each run takes about 3 minutes at ~40 tok/s on an M2 via Metal.
+| Task | Baseline passes | Fine-tuned passes |
+|---|---:|---:|
+| t01 | 10/10 | 10/10 |
+| t02 | 10/10 | 10/10 |
+| t03 | 10/10 | 9/10* |
+| t04 | 10/10 | 10/10 |
+| t05 | 10/10 | 10/10 |
+| t06 | 0/10 | 0/10 |
+| t07 | 4/10 | **10/10** |
+| t08 | 10/10 | 10/10 |
+| t09 | 7/10 | **10/10** |
+| t10 | 0/10 | 0/10 |
+| t11 | 0/10 | 0/10 |
+| t12 | 0/10 | 0/10 |
 
-## Where it fails
+\* One t03 attempt abstained after a transient SSH protocol-banner error. The predetermined sample was retained and no replacement run was added.
 
-The failures split into two kinds, and the distinction determines what to do
-about them.
+The fine-tune converted the two flaky tasks represented by successful training trajectories (t07 and t09) into stable 10/10 passes and reduced run-to-run variance. Four tasks remained stable failures, indicating a remaining capability or evidence-gathering ceiling rather than a consistency problem.
 
-**Consistency, not capability (6 tasks).** t04, t05, t07, t08, t09, and t10 each
-pass at least once — the model demonstrably can do them — but not reliably. t07
-and t08 are the weakest at 1/5. These don't require new knowledge; they require
-the model to do reliably what it already does occasionally.
+Raw sanitized results are available in [artifacts/posttrain_evaluation.json](artifacts/posttrain_evaluation.json).
 
-**A genuine ceiling (1 task).** t11 fails 5/5. It's a counterfactual — "if the
-R1–R2 link failed, would R1 still reach R2?" — requiring the model to simulate a
-failure and trace an alternate path. The answer isn't present in any single
-command's output. The model answers from priors without gathering evidence. This
-is the one that needs a stronger teacher, not more consistency.
+## Leakage audit
 
-A prompt fix during this work moved t03 from failing to stable pass by stating
-the VyOS interface syntax (`show interfaces ethernet <name>`) explicitly —
-evidence that some failures are scaffold gaps rather than model limits.
+The original benchmark exposed topology metadata that could let the model answer from context instead of live evidence. That leakage was removed before the final baseline was frozen. The final harness:
 
-## Design notes
+- keeps prompts and graders fixed across model comparisons;
+- reports repeated-run distributions instead of a favorable single run;
+- records per-task pass rates to separate stable capability from sampling variance;
+- tests safe abstention separately from factual correctness; and
+- retains infrastructure failures without silently adding replacement runs.
 
-**The allowlist is enforced in code, not the prompt.** The model is treated as
-untrusted input. The system prompt says read-only, but prompts are suggestions to
-a model; the `startswith("show ")` check in the executor is not. If the model
-hallucinates a configuration command, or is prompt-injected by content in device
-output, the executor refuses. Same trust boundary as parameterized SQL versus
-trusting user input.
+## Fine-tuning
 
-**Least-privilege account.** The agent authenticates as a dedicated `admin` user
-rather than root, so a compromised credential is a restricted user on lab VMs.
-Caveat: VyOS users created this way can still enter configuration mode, so the
-read-only guarantee comes from the code-level allowlist, not a VyOS privilege
-level.
+Qwen2.5-3B-Instruct was fine-tuned with LoRA on **59 sanitized successful tool-use trajectories**: 51 training records and 8 validation records. Only assistant tokens contributed to the loss.
 
-**Output truncation is context management.** A 3B model's usable context is the
-agent's entire working memory, so device output is capped to keep one verbose
-command from crowding out the reasoning. The current implementation is a hard
-character limit; smarter truncation is an open improvement.
+| Setting | Value |
+|---|---|
+| LoRA rank / alpha | 8 / 16 |
+| Target modules | q, k, v, o, gate, up, and down projections |
+| Learning rate | 1e-4 |
+| Effective batch size | 4 |
+| Epochs | 3 |
+| Seed | 3407 |
+| Maximum sequence length | 3072 |
+| Trainable parameters | 14,966,784 (0.48%) |
 
-## Roadmap
+Validation loss fell from **0.0605** after epoch 1 to **0.0349** after epoch 3.
 
-- [x] Agent loop, tool-calling, read-only allowlist
-- [x] 3-router VyOS OSPF lab (EVE-NG, Tailscale-routed management plane)
-- [x] 12-task benchmark with programmatic ground truth
-- [x] Multi-run harness — baseline 8.0 ± 1.22 / 12 with per-task stability
-- [ ] Self-distillation: fine-tune on the agent's own successful trajectories to
-      convert the six flaky tasks into stable passes
-- [ ] Teacher distillation for t11: collect a stronger model's verified
-      trajectories on the counterfactual task and test whether the reasoning
-      pattern transfers
+| Epoch | Training loss | Validation loss |
+|---:|---:|---:|
+| 1 | 0.0333 | 0.0605 |
+| 2 | 0.0200 | 0.0374 |
+| 3 | 0.0270 | 0.0349 |
 
-The stability breakdown reframes the distillation target. Most lost points are
-consistency, not missing capability — successful trajectories already exist for
-every flaky task, so self-distillation has material to work with. t11 is the only
-task with no successful example to learn from, and is the sole candidate for
-teacher distillation. Success will be measured by re-running the same 5× harness:
-a real improvement has to move the mean by more than the 1.22 run-to-run spread,
-and ideally shrink that spread as well. A negative result is also a result.
+The adapter was merged and exported as a **Q4_K_M GGUF** for local Ollama deployment: 1,929,902,720 bytes, SHA-256 `cd219b4dbfe69848b592aa1c62ce07eee29e367cb522f45a4fea6dde182581c2`.
+
+Reproducibility artifacts:
+
+- [training_manifest.json](artifacts/training_manifest.json)
+- [training_provenance.json](artifacts/training_provenance.json)
+- [vyos_trainer_state.json](artifacts/vyos_trainer_state.json) — complete step/loss history
+- [posttrain_evaluation.json](artifacts/posttrain_evaluation.json)
+
+The dataset itself is not published because the trajectories retain detailed topology transcripts. Its SHA-256 hash is included so an authorized copy can be verified without exposing it.
 
 ## Setup
 
 ```bash
-# 1. Serve the model (on a machine with a GPU)
+# 1. Baseline model
 ollama pull qwen2.5:3b
+
+# Fine-tuned model: place the exported GGUF beside Modelfile
+ollama create qwen2.5-vyos -f Modelfile
+
+# Serve Ollama on the private network interface used by the agent host
 OLLAMA_HOST=0.0.0.0 ollama serve
 
-# 2. On the agent host
-python3 -m venv .venv && source .venv/bin/activate
+# 2. Agent environment
+python3 -m venv .venv
+source .venv/bin/activate
 pip install requests pyyaml netmiko
 
-# 3. Configure
-cp devices.yaml.example devices.yaml   # router IPs + credentials
-# edit config.yaml -> base_url to point at the Ollama endpoint
+# 3. Configuration
+cp devices.yaml.example devices.yaml
+# Add router addresses and credentials to devices.yaml.
+# Point config.yaml at Ollama and choose qwen2.5:3b or qwen2.5-vyos.
 
 # 4. Run
 python agent.py "How many OSPF neighbors does R1 have?"
-python run_evals.py                  # single run
-python run_evals_multi.py 5 --quiet  # 5 runs, mean ± stdev, stability table
+python run_evals.py
+python run_evals_multi.py 10 --quiet
 ```
 
-Any SSH-reachable device that speaks `show` commands works — point
-`devices.yaml` at it. The endpoint is OpenAI-compatible, so swapping the local
-model for a cloud API is a one-line config change.
+Do not expose an unauthenticated Ollama listener to an untrusted network. The example binds beyond localhost only because the agent and model hosts communicate over a private mesh.
 
-## Repository
+## Repository map
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `agent.py` | Agent loop: model call, tool execution, allowlist, trajectory logging |
-| `run_evals.py` | Single benchmark run; scores answers, tags trajectories pass/fail |
-| `run_evals_multi.py` | Repeats the benchmark N times; reports mean ± stdev and per-task stability |
-| `export_sft.py` | Filters successful trajectories into fine-tuning data |
-| `evals/tasks.yaml` | Benchmark tasks with programmatic checks and ground truth |
-| `configs/R*.txt` | VyOS bootstrap configs for the three routers |
-| `devices.yaml.example` | Device inventory template |
+| `agent.py` | Model loop, tool execution, allowlists, and trajectory logging |
+| `run_evals.py` | Single benchmark run and programmatic scoring |
+| `run_evals_multi.py` | Repeated-run statistics and per-task stability |
+| `export_sft.py` | Filters successful trajectories into training examples |
+| `evals/tasks.yaml` | Frozen tasks, checks, and ground truth |
+| `configs/R*.txt` | VyOS bootstrap configurations |
+| `devices.yaml.example` | Device inventory template without credentials |
 | `config.yaml` | Model endpoint and agent settings |
-| `TOPOLOGY.md` | Lab diagram, addressing plan, build steps |
+| `Modelfile` | Ollama definition for the fine-tuned GGUF |
+| `TOPOLOGY.md` | Lab diagram, addressing plan, and build steps |
+| `artifacts/` | Sanitized training and evaluation provenance |
+
+## Limitations
+
+- The benchmark has only 12 tasks and one three-router OSPF topology.
+- Four tasks remain stable failures after fine-tuning.
+- The training set contains 59 successful trajectories, so the experiment measures targeted consistency gains rather than broad network-operations competence.
+- The read-only boundary protects the executor, but device output can still contain untrusted text and must remain data—not instructions.
+- The current output truncation is character-based rather than command-aware.
+
+## Roadmap
+
+- [x] Framework-free tool-calling loop and code-enforced read-only allowlist
+- [x] Three-router VyOS OSPF lab in EVE-NG
+- [x] Leakage-audited frozen benchmark
+- [x] Ten-run evaluation with per-task stability
+- [x] LoRA fine-tuning on 59 sanitized trajectories
+- [x] Q4_K_M export and local Ollama deployment
+- [ ] Add stronger verified trajectories for the four stable-failure tasks
+- [ ] Evaluate on larger and more varied topologies
+- [ ] Replace hard output truncation with command-aware context reduction
 
 ## Related
 
-[DNS Exfiltration Detector](https://github.com/jsanchez1101/DNS-Exfiltration-Detector)
-— classical ML for detecting data exfiltration over DNS, running on the same
-homelab.
+[DNS Exfiltration Detector](https://github.com/jsanchez1101/DNS-Exfiltration-Detector) — classical ML detection using query-side window features, leakage audits, and live-versus-lab traffic validation.
