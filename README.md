@@ -4,6 +4,8 @@ A framework-free local LLM agent that answers network-operations questions from 
 
 **Result:** a frozen 10-run benchmark improved from **7.1 ± 0.74 / 12** with base Qwen2.5-3B to **7.9 ± 0.32 / 12** after LoRA (Low Rank Adaptation) fine-tuning. Mean delta: **+0.8 tasks** (95% CI: +0.3 to +1.3).
 
+The training data came from successful runs on the same 12 benchmark tasks, so this measures consistency on tasks the model had already seen, not generalization to new ones. See [What the fine-tune does and doesn't show](#what-the-fine-tune-does-and-doesnt-show).
+
 ## How it works
 
 ```text
@@ -46,7 +48,7 @@ Three VyOS routers form an OSPF area-0 triangle inside EVE-NG. The management su
 
 ## Security boundaries
 
-- **The model is treated as untrusted input.** The executor—not the prompt—enforces the device and command allowlists.
+- **The model is treated as untrusted input.** The executor, not the prompt, enforces the device and command allowlists.
 - **Read-only commands only.** Hallucinated configuration commands and unsupported command forms are rejected before SSH execution.
 - **Local inference.** Ollama serves the model inside the private network; no device output is sent to a hosted model API.
 - **Dedicated lab credentials.** The agent does not authenticate as root. VyOS privilege levels still allow configuration mode, so the code-level command boundary remains the primary control.
@@ -83,7 +85,18 @@ The mean improved by **0.8 tasks** (11.3%). A normal-approximation 95% confidenc
 
 The fine-tune converted the two flaky tasks represented by successful training trajectories (t07 and t09) into stable 10/10 passes and reduced run-to-run variance. Four tasks remained stable failures, indicating a remaining capability or evidence-gathering ceiling rather than a consistency problem.
 
+### What the fine-tune does and doesn't show
+
+The 59 training trajectories are successful runs of benchmark tasks t01 to t05 and t07 to t09, the same tasks the model is then scored on. There was no valid training example for t06 or t10 to t12, and those four tasks stayed at 0/10.
+
+- **It does show** that a small LoRA fine-tune can turn flaky behavior into reliable behavior. t07 went from 4/10 to 10/10 and t09 from 7/10 to 10/10, and run-to-run spread dropped from 0.74 to 0.32.
+- **It doesn't show** that the model learned anything it couldn't already do some of the time, or that it would do better on new questions or a different topology. That needs a held-out task set and a changed lab (renamed devices, new addressing), which is the next experiment.
+
 Raw sanitized results are available in [artifacts/posttrain_evaluation.json](artifacts/posttrain_evaluation.json).
+
+### Files in this repo vs. the reported benchmark
+
+The router configs, `TOPOLOGY.md`, and `evals/tasks.yaml` here are an earlier snapshot where R2's router ID is `2.2.2.2`. Before the frozen `eval-v1` run, R2's router ID was changed to `10.50.0.2` so the model couldn't guess it from the 1.1.1.1 / 2.2.2.2 / 3.3.3.3 pattern. The reported numbers come from that later version. Syncing the frozen `eval-v1` files into this repo is on the roadmap.
 
 ## Leakage audit
 
@@ -124,7 +137,7 @@ Reproducibility artifacts:
 
 - [training_manifest.json](artifacts/training_manifest.json)
 - [training_provenance.json](artifacts/training_provenance.json)
-- [vyos_trainer_state.json](artifacts/vyos_trainer_state.json) — complete step/loss history
+- [vyos_trainer_state.json](artifacts/vyos_trainer_state.json): complete step/loss history
 - [posttrain_evaluation.json](artifacts/posttrain_evaluation.json)
 
 The dataset itself is not published because the trajectories retain detailed topology transcripts. Its SHA-256 hash is included so an authorized copy can be verified without exposing it.
@@ -179,8 +192,9 @@ Do not expose an unauthenticated Ollama listener to an untrusted network. The ex
 
 - The benchmark has only 12 tasks and one three-router OSPF topology.
 - Four tasks remain stable failures after fine-tuning.
-- The training set contains 59 successful trajectories, so the experiment measures targeted consistency gains rather than broad network-operations competence.
-- The read-only boundary protects the executor, but device output can still contain untrusted text and must remain data—not instructions.
+- The training set contains 59 successful trajectories from the same tasks the model is evaluated on, so the experiment measures consistency on seen tasks rather than broad network-operations competence.
+- The configs and task file in this repo predate the frozen benchmark (see above).
+- The read-only boundary protects the executor, but device output can still contain untrusted text and must remain data, not instructions.
 - The current output truncation is character-based rather than command-aware.
 
 ## Roadmap
@@ -192,9 +206,11 @@ Do not expose an unauthenticated Ollama listener to an untrusted network. The ex
 - [x] LoRA fine-tuning on 59 sanitized trajectories
 - [x] Q4_K_M export and local Ollama deployment
 - [ ] Add stronger verified trajectories for the four stable-failure tasks
+- [ ] Held-out task set and a renamed/re-addressed lab to test generalization
+- [ ] Sync the frozen `eval-v1` configs and tasks into this repo
 - [ ] Evaluate on larger and more varied topologies
 - [ ] Replace hard output truncation with command-aware context reduction
 
 ## Related
 
-[DNS Exfiltration Detector](https://github.com/jsanchez1101/DNS-Exfiltration-Detector) — classical ML detection using query-side window features, leakage audits, and live-versus-lab traffic validation.
+[DNS Exfiltration Detector](https://github.com/jsanchez1101/DNS-Exfiltration-Detector): classical ML on DNS query windows, including an audit that found the benchmark dataset's attack captures contain no exfiltration queries.
