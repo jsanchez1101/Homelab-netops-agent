@@ -1,0 +1,65 @@
+{
+  "evaluation_date": "2026-08-18",
+  "benchmark_version": "eval-v1",
+  "protocol": {
+    "runs": 10,
+    "tasks_per_run": 12,
+    "temperature": 0.2,
+    "frozen_prompts_graders_tasks": true,
+    "replacement_runs": 0
+  },
+  "baseline": {
+    "model": "qwen2.5:3b",
+    "scores": [6, 7, 6, 8, 7, 8, 7, 7, 7, 8],
+    "mean": 7.1,
+    "stdev": 0.74,
+    "per_task_passes": {
+      "t01": 10,
+      "t02": 10,
+      "t03": 10,
+      "t04": 10,
+      "t05": 10,
+      "t06": 0,
+      "t07": 4,
+      "t08": 10,
+      "t09": 7,
+      "t10": 0,
+      "t11": 0,
+      "t12": 0
+    }
+  },
+  "posttrain": {
+    "model": "qwen2.5-vyos:latest",
+    "scores": [8, 8, 8, 8, 7, 8, 8, 8, 8, 8],
+    "mean": 7.9,
+    "stdev": 0.32,
+    "range": [7, 8],
+    "ci95_normal_approximation": [7.7, 8.1],
+    "per_task_passes": {
+      "t01": 10,
+      "t02": 10,
+      "t03": 9,
+      "t04": 10,
+      "t05": 10,
+      "t06": 0,
+      "t07": 10,
+      "t08": 10,
+      "t09": 10,
+      "t10": 0,
+      "t11": 0,
+      "t12": 0
+    }
+  },
+  "comparison": {
+    "mean_delta": 0.8,
+    "relative_mean_improvement_percent": 11.27,
+    "delta_ci95_normal_approximation": [0.3, 1.3],
+    "t07_delta_passes": 6,
+    "t09_delta_passes": 3
+  },
+  "caveats": [
+    "A transient device SSH protocol-banner error caused t03 to abstain once; the predetermined sample was retained without a replacement run.",
+    "The confidence intervals are normal approximations reported by the frozen benchmark runner.",
+    "Topology-bearing trajectories and detailed failure reports are intentionally excluded from this public artifact."
+  ]
+}

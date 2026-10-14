@@ -1,0 +1,18 @@
+{
+  "base_model": "unsloth/Qwen2.5-3B-Instruct-bnb-4bit",
+  "dataset_sha256": "8a7687bdebe298290751b9727d224af14634f64c314a14ec1bfce7b3e4686b5b",
+  "dataset_records": 59,
+  "train_records": 51,
+  "validation_records": 8,
+  "epochs": 3,
+  "optimizer_steps": 39,
+  "lora_rank": 8,
+  "lora_alpha": 16,
+  "learning_rate": 0.0001,
+  "seed": 3407,
+  "final_validation_loss": 0.034878,
+  "quantization": "q4_k_m",
+  "gguf_file": "Qwen2.5-3B-Instruct.Q4_K_M.gguf",
+  "gguf_bytes": 1929902720,
+  "gguf_sha256": "cd219b4dbfe69848b592aa1c62ce07eee29e367cb522f45a4fea6dde182581c2"
+}
