@@ -1,0 +1,16 @@
+{
+  "source": "trajectories/trajectories.jsonl",
+  "output": "outputs/portfolio-trajectories.sanitized.jsonl",
+  "records": 120,
+  "records_scanned": 2360,
+  "records_skipped": 2240,
+  "model_filter": "qwen2.5-vyos:latest",
+  "unique_prompt_hashes": 12,
+  "models": {
+    "qwen2.5-vyos:latest": 120
+  },
+  "sha256": "d1c8cdbcd759efc47651e3331aa991c46156cc6417b38c2d4f2b600f69e6865d",
+  "tailscale_cgnat_matches": 0,
+  "mac_address_matches": 0,
+  "system_and_user_messages_removed": true
+}

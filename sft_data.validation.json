@@ -1,0 +1,38 @@
+{
+  "status": "ready_for_training",
+  "dataset": "sft_data.jsonl",
+  "format": "chat_messages_jsonl_with_tool_calls",
+  "records": 59,
+  "unique_transcripts": 59,
+  "bytes": 189928,
+  "dataset_sha256": "8a7687bdebe298290751b9727d224af14634f64c314a14ec1bfce7b3e4686b5b",
+  "benchmark_freeze_sha256": "35af4a5456a31375d6e42c9b96115197bc11300dc8e5fc18d52f42e37ee8e515",
+  "export_manifest_sha256": "ceee4b83a25fa39033a7cd50e2d4831c57c80b05b4f130723eca933412e8fe2b",
+  "checks": {
+    "frozen_benchmark_verified": true,
+    "source_ids_linked_to_frozen_baseline": true,
+    "current_prompt_only": true,
+    "current_task_text_only": true,
+    "current_grader_failures": 0,
+    "duplicate_transcripts": 0,
+    "credential_or_management_value_matches": 0,
+    "tailscale_address_matches": 0,
+    "git_ignored": true
+  },
+  "per_task": {
+    "t01": 8,
+    "t02": 8,
+    "t03": 8,
+    "t04": 8,
+    "t05": 8,
+    "t07": 4,
+    "t08": 8,
+    "t09": 7
+  },
+  "coverage_gaps": ["t06", "t10", "t11", "t12"],
+  "notes": [
+    "Only successful frozen-baseline trajectories are included.",
+    "Holdout, abstention, legacy, failed, stale-prompt, and probe trajectories are excluded.",
+    "Raw VyOS evidence contains 32 synthetic lab MAC-address occurrences; the dataset is ignored by Git."
+  ]
+}

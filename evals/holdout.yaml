@@ -1,0 +1,49 @@
+# Held-out question variants for the current live topology. These are excluded
+# from SFT export. They test command/evidence transfer, not unseen network facts;
+# testing unseen facts requires a second live topology or a deliberate state change.
+split: holdout
+tasks:
+  - id: h01
+    difficulty: easy
+    task: "What is R2's OSPF router ID?"
+    check: lead_regex
+    expect: '(?i)^.*\b10\.50\.0\.2\b'
+    evidence:
+      any:
+        - {device: R2, command: '^show ip ospf(?: database| interface(?: \S+)?)?$', output: '(?:Router ID\s*:?\s*10\.50\.0\.2|OSPF Router with ID \(10\.50\.0\.2\))'}
+
+  - id: h02
+    difficulty: easy
+    task: "How many OSPF neighbors does R3 have?"
+    check: lead_regex
+    expect: '(?i)^\s*(?:r3\s+has\s+)?2\s+(?:ospf\s+)?neighbors?\b'
+    evidence:
+      any:
+        - {device: R3, command: '^show ip ospf neighbor(?: detail)?$', output: '(?ms)(?=.*^\s*1\.1\.1\.1\s+)(?=.*^\s*10\.50\.0\.2\s+)'}
+
+  - id: h03
+    difficulty: easy
+    task: "Is interface eth2 on R2 up or down?"
+    check: lead_regex
+    expect: '(?i)^\s*(?:(?:interface\s+)?eth2\s+on\s+r2|r2(?:''s)?\s+(?:interface\s+)?eth2|(?:interface\s+)?eth2)\s+is\s+up\b'
+    evidence:
+      any:
+        - {device: R2, command: '^show interfaces ethernet eth2$', output: '(?im)^eth2(?::|\s+is).*\b(?:state\s+)?UP\b'}
+
+  - id: h04
+    difficulty: medium
+    task: "What is the IP address of R1's interface that connects to R3?"
+    check: lead_regex
+    expect: '^.*\b10\.0\.13\.1\b'
+    evidence:
+      any:
+        - {device: R1, command: '^show interfaces(?: ethernet eth2)?$', output: '\b10\.0\.13\.1/30\b'}
+
+  - id: h05
+    difficulty: medium
+    task: "How many routes did R3 learn from OSPF neighbors? Count only routes with a next-hop via another router. Give just the count."
+    check: integer_answer
+    expect: 3
+    evidence:
+      any:
+        - {device: R3, command: '^show ip route ospf$', output: '(?s)(?=.*O[^\n]*1\.1\.1\.1/32[^\n]*\bvia\b)(?=.*O[^\n]*10\.50\.0\.2/32[^\n]*\bvia\b)(?=.*O[^\n]*10\.0\.12\.0/30[^\n]*\bvia\b)'}

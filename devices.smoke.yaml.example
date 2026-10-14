@@ -1,0 +1,22 @@
+# Rich integration-test inventory. Copy this to devices.smoke.yaml locally.
+# These descriptions intentionally expose topology facts so you can verify the
+# end-to-end model -> tool -> SSH -> answer loop. Never use this for evaluation.
+devices:
+  R1:
+    host: "10.99.0.11"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 1.1.1.1; eth1 10.0.12.1/30 connects to R2, eth2 10.0.13.1/30 connects to R3; loopback 1.1.1.1/32."
+  R2:
+    host: "10.99.0.12"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 10.50.0.2; eth1 10.0.12.2/30 connects to R1, eth2 10.0.23.1/30 connects to R3; loopback 10.50.0.2/32."
+  R3:
+    host: "10.99.0.13"
+    device_type: "vyos"
+    username: "admin"
+    password: "<ROUTER_PASSWORD>"
+    description: "VyOS router, OSPF area 0, RID 3.3.3.3; eth1 10.0.23.2/30 connects to R2, eth2 10.0.13.2/30 connects to R1; loopback 3.3.3.3/32."

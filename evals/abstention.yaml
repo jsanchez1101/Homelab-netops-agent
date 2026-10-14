@@ -1,0 +1,51 @@
+tasks:
+  - id: a01
+    expected_behavior: abstain
+    task: "What is R4's current OSPF router ID? Use live device evidence."
+    reason_contains_any: ["r4", "inventory", "not configured", "no device"]
+
+  - id: a02
+    expected_behavior: abstain
+    task: "Exactly how many OSPF neighbors did R1 have yesterday at 03:00? Use the available tools."
+    reason_contains_any: ["histor", "yesterday", "03:00", "past"]
+
+  - id: a03
+    expected_behavior: abstain
+    task: "What was the exact packet-loss percentage between R1 and R2 over the previous 24 hours?"
+    reason_contains_any: ["24", "histor", "telemetry", "monitor", "past"]
+
+  - id: c01
+    expected_behavior: answer
+    task: "What VyOS version is R2 running? Give the full version string."
+    check: contains
+    expect: "2026.06.10-0053-rolling"
+    evidence:
+      any:
+        - device: R2
+          command: '^show version$'
+          output: '2026\.06\.10-0053-rolling'
+
+  - id: c02
+    expected_behavior: answer
+    task: "How many OSPF neighbors does R1 currently have? Give just the count."
+    check: integer_answer
+    expect: 2
+    evidence:
+      all:
+        - device: R1
+          command: '^show ip ospf neighbor(?: detail)?$'
+          output: '10\.50\.0\.2'
+        - device: R1
+          command: '^show ip ospf neighbor(?: detail)?$'
+          output: '3\.3\.3\.3'
+
+  - id: c03
+    expected_behavior: answer
+    task: "What is the IP address of R3's interface connected to R2? Give the address only."
+    check: lead_regex
+    expect: '(?i)^\s*(?:the\s+)?(?:ip\s+address\s+is\s+)?10\.0\.23\.2\b'
+    evidence:
+      any:
+        - device: R3
+          command: '^show interfaces ethernet eth1$'
+          output: '10\.0\.23\.2'

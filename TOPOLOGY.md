@@ -11,7 +11,7 @@ agent could meaningfully query, and VyOS isn't a switch anyway.
             eth0       eth0       eth0            (mgmt, passive in OSPF)
          ┌────┴───┐  ┌───┴────┐  ┌───┴────┐
          │   R1   │  │   R2   │  │   R3   │
-         │1.1.1.1 │  │2.2.2.2 │  │3.3.3.3 │
+         │1.1.1.1 │  │10.50.0.2│  │3.3.3.3 │
          └─┬────┬─┘  └─┬────┬─┘  └─┬────┬─┘
            │    │      │    │      │    │
           eth1 eth2   eth1 eth2   eth1 eth2
@@ -32,7 +32,7 @@ agent could meaningfully query, and VyOS isn't a switch anyway.
 | R1–R2   | 10.0.12.0/30  | R1 eth1 = .1   | R2 eth1 = .2   |
 | R2–R3   | 10.0.23.0/30  | R2 eth2 = .1   | R3 eth1 = .2   |
 | R1–R3   | 10.0.13.0/30  | R1 eth2 = .1   | R3 eth2 = .2   |
-| lo      | /32           | 1.1.1.1 / 2.2.2.2 / 3.3.3.3 |
+| lo      | /32           | 1.1.1.1 / 10.50.0.2 / 3.3.3.3 |
 | eth0    | YOUR LAN      | R1=.151  R2=.152  R3=.153   |
 
 Configs use **192.168.86.x** for mgmt (based on node1 sitting at
@@ -45,7 +45,7 @@ sure .151–.153 are outside the DHCP pool.
 - R1 OSPF neighbors: **2**
 - DR on R1–R2 segment: **R2** (equal priority, higher router-id)
 - OSPF routes in R2's table: **3** (1.1.1.1/32, 3.3.3.3/32, 10.0.13.0/30)
-- R1 → 2.2.2.2: yes, next hop **10.0.12.2**
+- R1 → 10.50.0.2: yes, next hop **10.0.12.2**
 - Hello/dead timers R1↔R2: defaults both sides → **10 / 40**
 
 ## One-time: install the VyOS image into EVE-NG
@@ -64,11 +64,11 @@ sure .151–.153 are outside the DHCP pool.
    ```
 3. In the EVE-NG web UI: add a node → template **VyOS** (now selectable),
    set "number of nodes" = 3, names R1/R2/R3. RAM 1024 MB each is plenty.
-4. Boot ONE node, console in (log in with the credentials configured during installation), run:
+4. Boot ONE node, console in (login **vyos / vyos**), run:
    ```
    install image
    ```
-   Accept defaults, set a unique local password when asked, poweroff. This
+   Accept defaults, set a unique local password when asked, then power off. This
    writes VyOS onto the node's virtual disk so config persists.
    Repeat for each node (each has its own disk). After all three are
    installed you can optionally delete cdrom.iso from the template dir so
@@ -79,8 +79,9 @@ sure .151–.153 are outside the DHCP pool.
 1. Add a **Network** object → type **Management (Cloud0)**.
 2. Cable (nodes must be stopped): each router's **eth0 → Cloud0**;
    R1 eth1 ↔ R2 eth1; R2 eth2 ↔ R3 eth1; R1 eth2 ↔ R3 eth2.
-3. Start all nodes, console into each, log in (vyos / vyos — or the password
-   you set during install image), and paste its file from `configs/`.
+3. Start all nodes, console into each, and log in with the credentials configured
+   during installation. Replace `REPLACE_BEFORE_USE` in each file from `configs/`
+   with a unique local password, then paste the matching configuration.
    The files are full `set` command blocks ending in `commit` + `save`.
 
 ## Verify from node1

@@ -1,0 +1,27 @@
+{
+  "source": "existing clean 10-run baseline trajectories",
+  "note": "Rescored after fairer t09 and t12 grading; original result retained",
+  "scores": [
+    7,
+    7,
+    5,
+    6,
+    7,
+    6,
+    5,
+    6,
+    6,
+    7
+  ],
+  "mean": 6.2,
+  "stdev": 0.7888106377466154,
+  "per_task_passes": {
+    "t01": 10,
+    "t02": 10,
+    "t03": 10,
+    "t04": 10,
+    "t08": 10,
+    "t09": 7,
+    "t12": 5
+  }
+}

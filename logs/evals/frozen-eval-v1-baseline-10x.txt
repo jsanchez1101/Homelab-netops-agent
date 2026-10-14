@@ -1,0 +1,184 @@
+Running the 12-task benchmark 10x (quiet mode)
+
+--- run 1/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (abstained)
+    t08: PASS
+    t09: FAIL (wrong_answer)
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 1: 6/12 (185s)
+
+--- run 2/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (abstained)
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 2: 7/12 (173s)
+
+--- run 3/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (abstained)
+    t08: PASS
+    t09: FAIL (wrong_answer)
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 3: 6/12 (174s)
+
+--- run 4/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: PASS
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 4: 8/12 (182s)
+
+--- run 5/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (wrong_answer)
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 5: 7/12 (156s)
+
+--- run 6/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: PASS
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 6: 8/12 (166s)
+
+--- run 7/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (wrong_answer)
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 7: 7/12 (161s)
+
+--- run 8/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: FAIL (abstained)
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 8: 7/12 (163s)
+
+--- run 9/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: PASS
+    t08: PASS
+    t09: FAIL (wrong_answer)
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 9: 7/12 (167s)
+
+--- run 10/10 ---
+    t01: PASS
+    t02: PASS
+    t03: PASS
+    t04: PASS
+    t05: PASS
+    t06: FAIL (wrong_answer)
+    t07: PASS
+    t08: PASS
+    t09: PASS
+    t10: FAIL (wrong_answer)
+    t11: FAIL (wrong_answer)
+    t12: FAIL (wrong_answer)
+    run 10: 8/12 (166s)
+
+==============================================================
+RESULTS OVER 10 RUNS
+==============================================================
+scores: [6, 7, 6, 8, 7, 8, 7, 7, 7, 8]
+mean:   7.1/12  (59%)   stdev: 0.74
+range:  6–8
+95% CI: 6.64–7.56 tasks (normal approximation)
+
+task  diff        pass rate   stability
+--------------------------------------------------------------
+t01   easy     10/10 ##########   stable pass
+t02   easy     10/10 ##########   stable pass
+t03   easy     10/10 ##########   stable pass
+t04   easy     10/10 ##########   stable pass
+t05   medium   10/10 ##########   stable pass
+t06   medium   0/10 ..........   stable fail
+t07   medium   4/10 ####......   FLAKY
+t08   medium   10/10 ##########   stable pass
+t09   hard     7/10 #######...   FLAKY
+t10   hard     0/10 ..........   stable fail
+t11   hard     0/10 ..........   stable fail
+t12   hard     0/10 ..........   stable fail
+==============================================================
+
+Flaky tasks (inconsistent across runs): t07, t09
+These are variance, not capability — a single run can't tell you
+whether a change helped. Compare means across runs instead.
+
+Appended to eval_runs.json (23 sessions recorded).
+Failure details written to reports/tasks-20260818-025341-failures.txt
+Previous session mean: 7/12 (2026-08-15T00:11:01)  ->  delta +0.10
+Delta interval unavailable: both sessions need at least 2 runs.

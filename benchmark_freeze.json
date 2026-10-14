@@ -1,0 +1,26 @@
+{
+  "benchmark_version": "eval-v1",
+  "created_at": "2026-08-18T02:25:01+00:00",
+  "files": {
+    "agent.py": "954b89dd72073ac44487b84caab6b0a35c3fe54906c4a8904db66a399d3d995e",
+    "benchmark_freeze.py": "78ae62a6e01a53c151de65f11d63ab467a8f6e36f2602f019f24e334842e0ed2",
+    "evals/tasks.yaml": "d06b0c343ba9b6ffcfe8b2f200306bcbf322f83baf01cb40f5bda1cc311e0877",
+    "evals/abstention.yaml": "72975c1301d1ca931a54d2c20f260641ff67b67b8abd6e2e2bba2d61b0de605d",
+    "evals/holdout.yaml": "80d2cd288d61e0f7c2f7d233ab3abb22d107dc80653215557e2f369d984e6c7e",
+    "run_evals.py": "033ddf83b2312ce6891a2d0ca268aab20153a149595a2b437ad8b4d4aa3a4a88",
+    "run_evals_multi.py": "8f966a614f7ed5a4803e85f6b971cec57dab7bfe61b7fea4367c310a9b3ee98c",
+    "run_abstention_evals.py": "43632bccfbb88f763d78ae6132efb71d120f3c7bf00a91b3dfe7d711a708ca08",
+    "export_sft.py": "bb5956ce83b3d5a1f0f05cbaad8e7d023066a0b70e916af42c5de4202b57c693"
+  },
+  "runtime": {
+    "model": "qwen2.5:3b",
+    "model_endpoint_scope": "tailscale",
+    "max_iterations": 8,
+    "max_tool_output_chars": 2000,
+    "max_empty_response_retries": 1,
+    "temperature": 0.2,
+    "system_prompt_sha256": "499808416d66be49016c588a13c86ef21a2804d2b97337239468b1a203e35e04",
+    "tool_schemas_sha256": "4efd3e82153d365f4a1fb5c2decb8913788b25b991c733f9491ab4e94d2ed9e1"
+  },
+  "unfreeze_policy": "Only a demonstrated grader or infrastructure bug reproducible on a saved trajectory may create a new benchmark version. Model capability failures do not justify changing this manifest."
+}

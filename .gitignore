@@ -3,5 +3,11 @@ __pycache__/
 *.pyc
 trajectories/*.jsonl
 devices.yaml
+devices.smoke.yaml
+config.local.yaml
 eval_runs.json
+sft_data*.jsonl
+eval_log*.txt
 PLAN.md
+demo/site.log
+.security-backups/

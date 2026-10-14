@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetOps Agent — Evaluation Console</title>
+  <style>
+    :root {
+      --bg: #05060a;
+      --panel: #0c0e14;
+      --panel-2: #12141c;
+      --border: #1e2130;
+      --border-glow-top: rgba(74, 144, 217, 0.15);
+      --text: #e8eaf0;
+      --text-dim: #5a6078;
+      --accent: #4a90d9;
+      --accent-glow: rgba(74, 144, 217, 0.3);
+      --success: #00d084;
+      --fail: #ff4757;
+      --warn: #ffa502;
+      --easy: #4a90d9;
+      --medium: #9b7cff;
+      --hard: #45b8af;
+      --topology-line: #52617d;
+      --topology-text: #929db7;
+      --cloud-fill: #161e2d;
+      --cloud-border: #7185aa;
+      --radius: 14px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "SF Mono", Monaco, "Cascadia Code", "Fira Code", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(74, 144, 217, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74, 144, 217, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Portfolio navigation preview */
+    .ghost-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding: 0.55rem 0.65rem 0.55rem 0.85rem;
+      background: rgba(12, 14, 20, 0.48);
+      border: 1px solid rgba(146, 157, 183, 0.16);
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .ghost-wordmark {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
+    .ghost-monogram {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: var(--accent);
+      background: rgba(74, 144, 217, 0.08);
+      border: 1px solid rgba(74, 144, 217, 0.26);
+      border-radius: 8px;
+      letter-spacing: 0;
+    }
+
+    .ghost-links {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+    }
+
+    .ghost-link {
+      padding: 0.42rem 0.7rem;
+      color: var(--text-dim);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      text-decoration: none;
+      transition: color 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    .ghost-link:hover {
+      color: var(--text);
+      background: rgba(74, 144, 217, 0.07);
+      border-color: rgba(74, 144, 217, 0.16);
+    }
+
+    .ghost-link[aria-current="page"] {
+      color: var(--accent);
+      background: rgba(74, 144, 217, 0.1);
+      border-color: rgba(74, 144, 217, 0.22);
+    }
+
+    @media (max-width: 700px) {
+      .ghost-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .ghost-links {
+        width: 100%;
+        overflow-x: auto;
+      }
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), #4a90d9);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand .subtitle {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-family: var(--mono);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-family: var(--mono);
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Hero metrics */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 700px) {
+      .hero-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .metric:hover { border-color: var(--border-glow-top); }
+
+    .metric-value {
+      font-family: var(--mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+
+    .metric-value.small { font-size: 1.4rem; }
+
+    .metric-label {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-delta {
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+      font-family: var(--mono);
+    }
+
+    .metric-delta.pos { color: var(--success); }
+    .metric-delta.neg { color: var(--fail); }
+
+    /* Main grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    /* Topology */
+    .topology-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 340px;
+      position: relative;
+    }
+
+    .topology-svg {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .router-node {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .router-node:hover { transform: scale(1.08); }
+
+    .router-node:hover .router-bg {
+      filter: drop-shadow(0 0 14px var(--accent-glow));
+      stroke: var(--accent);
+    }
+
+    .router-node.dimmed { opacity: 0.25; }
+
+    .router-bg {
+      transition: all 0.3s;
+    }
+
+    .router-node.highlighted .router-bg {
+      stroke: var(--accent);
+      stroke-width: 3;
+      filter: drop-shadow(0 0 16px var(--accent-glow));
+    }
+
+    .link-line {
+      stroke: var(--topology-line);
+      stroke-width: 2.5;
+      transition: all 0.3s;
+      fill: ;
+    }
+
+    .link-line.dimmed { opacity: 0.15; }
+
+    .link-line.highlighted {
+      stroke: var(--accent);
+      stroke-width: 3;
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+
+    .link-line.active {
+      stroke: var(--success);
+      stroke-dasharray: 6,4;
+      animation: dash 1.2s linear infinite;
+    }
+
+    @keyframes dash {
+      to { stroke-dashoffset: -20; }
+    }
+
+    .ospf-packet {
+      fill: var(--success);
+      filter: drop-shadow(0 0 5px var(--success));
+    }
+
+    .link-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      fill: var(--topology-text);
+      text-anchor: middle;
+    }
+
+    .link-label-bg {
+      fill: var(--panel);
+      rx: 3;
+    }
+
+    .router-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      fill: var(--text);
+      text-anchor: middle;
+    }
+
+    .router-sub {
+      font-family: var(--mono);
+      font-size: 8px;
+      fill: var(--text-dim);
+      text-anchor: middle;
+    }
+
+    .cloud-shape {
+      fill: var(--cloud-fill);
+      stroke: var(--cloud-border);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 7px rgba(113, 133, 170, 0.2));
+    }
+
+    .cloud-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      fill: #c8d1e3;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+
+    .mgmt-link {
+      stroke: var(--topology-line);
+      stroke-width: 1.75;
+      stroke-dasharray: 4,3;
+      opacity: 0.9;
+    }
+
+    .topology-tooltip {
+      position: absolute;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      max-width: 220px;
+    }
+
+    .topology-tooltip.visible { opacity: 1; }
+
+    .topology-tooltip .tt-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .topology-tooltip .tt-body {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    /* Task matrix */
+    .task-matrix {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.625rem;
+    }
+
+    @media (max-width: 700px) {
+      .task-matrix { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .task-matrix { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .task-cell {
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-cell::after {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transition: transform 0.2s;
+    }
+
+    .task-cell:hover {
+      transform: translateY(-2px);
+    }
+
+    .task-cell:hover::after { transform: scaleX(1); }
+
+    .task-cell.selected::after { transform: scaleX(1); }
+
+    .task-cell.stable-pass:hover,
+    .task-cell.stable-pass.selected {
+      border-color: var(--success);
+      box-shadow: 0 0 20px rgba(0, 208, 132, 0.22);
+    }
+
+    .task-cell.mixed:hover,
+    .task-cell.mixed.selected {
+      border-color: var(--warn);
+      box-shadow: 0 0 20px rgba(255, 165, 2, 0.22);
+    }
+
+    .task-cell.stable-fail:hover,
+    .task-cell.stable-fail.selected {
+      border-color: var(--fail);
+      box-shadow: 0 0 20px rgba(255, 71, 87, 0.22);
+    }
+
+    .task-cell.stable-pass::after { background: var(--success); }
+    .task-cell.mixed::after { background: var(--warn); }
+    .task-cell.stable-fail::after { background: var(--fail); }
+
+    .task-cell.dimmed { opacity: 0.3; }
+
+    .task-id {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 0.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-status {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .task-status.stable-pass { background: var(--success); }
+    .task-status.mixed { background: var(--warn); }
+    .task-status.stable-fail { background: var(--fail); }
+
+    .task-name {
+      font-size: 0.75rem;
+      line-height: 1.35;
+      margin-bottom: 0.6rem;
+      overflow-wrap: anywhere;
+      min-height: 2.2em;
+      color: var(--text);
+    }
+
+    .task-sparkline {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+      margin-top: auto;
+      margin-bottom: 0.4rem;
+    }
+
+    .spark-bar {
+      flex: 1;
+      background: var(--border);
+      border-radius: 1px;
+      min-height: 2px;
+      transition: background 0.2s;
+    }
+
+    .spark-bar.pass { background: var(--success); }
+    .spark-bar.fail { background: var(--fail); }
+    .spark-bar.linked { cursor: pointer; }
+    .spark-bar.linked:hover { transform: scaleY(1.3); transform-origin: bottom; }
+
+    .task-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-rate {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .task-rate.perfect { color: var(--success); }
+    .task-rate.good { color: var(--accent); }
+    .task-rate.poor { color: var(--fail); }
+
+    .task-topo-badge {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      background: var(--panel);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-family: var(--mono);
+    }
+
+    /* Difficulty breakdown */
+    .diff-breakdown {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .diff-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .diff-item .diff-val {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .diff-item .diff-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Terminal */
+    .terminal {
+      background: #08090f;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    .terminal-header {
+      background: var(--panel-2);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .term-btn {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .term-btn.red { background: var(--fail); }
+    .term-btn.yellow { background: var(--warn); }
+    .term-btn.green { background: var(--success); }
+
+    .term-title {
+      margin-left: 0.5rem;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+    }
+
+    .terminal-body {
+      padding: 1.25rem;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .term-line {
+      margin-bottom: 0.6rem;
+      line-height: 1.5;
+      opacity: 0;
+      animation: termFade 0.15s ease forwards;
+    }
+
+    @keyframes termFade {
+      to { opacity: 1; }
+    }
+
+    .term-prompt {
+      color: var(--success);
+      margin-right: 0.5rem;
+      font-weight: 600;
+    }
+
+    .term-cmd {
+      color: var(--text);
+    }
+
+    .term-output {
+      color: var(--text-dim);
+      margin-left: 1.25rem;
+      white-space: pre-wrap;
+      font-size: 0.78rem;
+    }
+
+    .term-comment {
+      color: #5a6078;
+      font-style: italic;
+    }
+
+    .term-highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.1em;
+      background: var(--accent);
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      padding: 0.25rem 0.7rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--mono);
+    }
+
+    .step:hover { border-color: var(--accent); color: var(--text); }
+    .step.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .trajectory-content { min-height: 180px; }
+
+    /* Post-run learning layer */
+    .learning-panel { margin-top: 1.25rem; }
+
+    .learning-header-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.3rem 0.65rem;
+      border: 1px solid rgba(54, 211, 153, 0.28);
+      border-radius: 999px;
+      color: var(--success);
+      background: rgba(54, 211, 153, 0.06);
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .learning-content { padding: 1.35rem; }
+
+    .learning-intro {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .learning-task-id {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .learning-question {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .learning-result {
+      flex: 0 0 auto;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+
+    .learning-result.stable-pass { color: var(--success); background: rgba(54, 211, 153, 0.06); }
+    .learning-result.mixed { color: var(--warn); background: rgba(245, 158, 11, 0.06); }
+    .learning-result.stable-fail { color: var(--danger); background: rgba(255, 75, 104, 0.06); }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .learning-card {
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-2);
+    }
+
+    .learning-card-title {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .learning-card-body {
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    .attempt-section {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(9, 12, 20, 0.52);
+    }
+
+    .attempt-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .attempt-label {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .run-step {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      cursor: pointer;
+    }
+
+    .run-step.pass { border-color: rgba(54, 211, 153, 0.5); color: var(--success); }
+    .run-step.fail { border-color: rgba(255, 75, 104, 0.5); color: var(--danger); }
+    .run-step.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .answer-card {
+      padding: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+
+    .answer-card.expected { border-left: 2px solid var(--accent); }
+    .answer-card.agent.pass { border-left: 2px solid var(--success); }
+    .answer-card.agent.fail { border-left: 2px solid var(--danger); }
+
+    .answer-text {
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .verdict-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .verdict {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+    }
+
+    .verdict-value.pass { color: var(--success); }
+    .verdict-value.fail { color: var(--danger); }
+    .verdict-value.not-evaluated { color: var(--warn); }
+
+    .attempt-summary {
+      margin-bottom: 0.75rem;
+      color: var(--text);
+      font-size: 0.8rem;
+      line-height: 1.55;
+    }
+
+    .command-list {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .command-block {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #080b12;
+    }
+
+    .command-heading {
+      padding: 0.55rem 0.7rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.69rem;
+    }
+
+    .command-output {
+      margin: 0;
+      padding: 0.7rem;
+      max-height: 210px;
+      overflow: auto;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .attempt-meta {
+      margin-top: 0.65rem;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+    }
+
+    .learning-disclosure {
+      margin-top: 0.9rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 2px solid var(--accent);
+      background: rgba(70, 146, 255, 0.055);
+      color: var(--text-dim);
+      font-size: 0.74rem;
+      line-height: 1.5;
+    }
+
+    .learning-disclosure strong { color: var(--text); }
+
+    @media (max-width: 720px) {
+      .learning-grid { grid-template-columns: 1fr; }
+      .learning-intro { flex-direction: column; }
+      .answer-grid, .verdict-grid { grid-template-columns: 1fr; }
+      .attempt-toolbar { align-items: flex-start; flex-direction: column; }
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    /* Selection hint */
+    .selection-hint {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 3rem 1rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <nav class="ghost-nav" aria-label="Portfolio navigation preview">
+    <div class="ghost-wordmark">
+      <span class="ghost-monogram">JS</span>
+      <span>JASON / PORTFOLIO</span>
+    </div>
+    <div class="ghost-links">
+      <a class="ghost-link" href="#" aria-disabled="true" onclick="event.preventDefault()">Home</a>
+      <a class="ghost-link" href="#" aria-current="page" aria-disabled="true" onclick="event.preventDefault()">Projects</a>
+      <a class="ghost-link" href="#" aria-disabled="true" onclick="event.preventDefault()">About</a>
+      <a class="ghost-link" href="#" aria-disabled="true" onclick="event.preventDefault()">Contact</a>
+    </div>
+  </nav>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">◈</div>
+      <div>
+        <h1>NetOps Agent Evaluation</h1>
+        <div class="subtitle">Qwen 2.5:3B · VyOS OSPF Triangle · {{ r.n_runs }} eval runs · EVE-NG Lab</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="pulse"></div>
+      <span>MOST RECENT EVALUATION</span>
+      <span style="color:var(--text-dim);">|</span>
+      <span>{{ r.display_timestamp or "No timestamp" }}</span>
+    </div>
+  </header>
+
+  <!-- Hero Metrics -->
+  <div class="hero-grid">
+    <div class="metric">
+      <div class="metric-value" id="score-counter">0.0</div>
+      <div class="metric-label">Mean Score</div>
+      <div class="metric-delta pos">/ {{ r.n_tasks }} tasks</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value small" id="stdev-counter">0.00</div>
+      <div class="metric-label">Std Dev</div>
+      <div class="metric-delta">σ across runs</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value small" id="pass-counter">0%</div>
+      <div class="metric-label">Mean Pass Rate</div>
+      <div class="metric-delta pos">{{ r.n_runs }} runs</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value small" style="color: var(--success);">OSPF</div>
+      <div class="metric-label">Protocol</div>
+      <div class="metric-delta">Area 0 · Triangle</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Topology Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">EVE-NG Topology</div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <span style="font-size:0.7rem;color:var(--text-dim);font-family:var(--mono);">AREA 0</span>
+          <button onclick="resetFilter()" style="background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);padding:0.2rem 0.6rem;border-radius:6px;font-size:0.7rem;cursor:pointer;font-family:var(--mono);">Reset</button>
+        </div>
+      </div>
+      <div class="topology-wrap">
+        <div class="topology-tooltip" id="topo-tooltip">
+          <div class="tt-title" id="tt-title"></div>
+          <div class="tt-body" id="tt-body"></div>
+        </div>
+
+        <svg class="topology-svg" viewBox="0 0 520 380">
+          <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Mgmt Cloud -->
+          <g class="cloud-group" id="cloud-mgmt" onmouseenter="showTooltip(evt, 'Mgmt Cloud', 'Isolated lab management network')" onmouseleave="hideTooltip()">
+            <path
+                class="cloud-shape"
+                d="M218 62 C208 62 202 56 202 48
+                  C202 40 208 34 216 33
+                  C218 23 228 17 238 21
+                  C244 12 259 10 268 21
+                  C279 16 291 23 292 34
+                  C302 34 310 41 310 49
+                  C310 57 303 62 293 62
+                  Z"
+            />
+            <text x="256" y="49" class="cloud-label">Mgmt</text>
+          </g>
+
+          <!-- Mgmt links -->
+          <line class="mgmt-link" x1="260" y1="67" x2="150" y2="95"/>
+          <line class="mgmt-link" x1="260" y1="67" x2="370" y2="95"/>
+          <line class="mgmt-link" x1="260" y1="67" x2="260" y2="280"/>
+
+          <!-- Mgmt labels -->
+          <text x="195" y="78" class="link-label">eth0</text>
+          <text x="315" y="78" class="link-label">eth0</text>
+          <text x="270" y="180" class="link-label">eth0</text>
+
+          <!-- R1-R3 link (top horizontal) -->
+          <g id="g-link-r1-r3" onmouseenter="showTooltip(evt, 'R1 ↔ R3', '10.0.13.0/30 · R1=.1, R3=.2 · eth2↔eth2')" onmouseleave="hideTooltip()" onclick="filterByLink('link-r1-r3')">
+            <line id="link-r1-r3" class="link-line" x1="150" y1="120" x2="370" y2="120"/>
+            <rect x="230" y="112" width="60" height="14" class="link-label-bg" opacity="0.9"/>
+            <text x="260" y="122" class="link-label">10.0.13.0/30</text>
+            <text x="210" y="115" class="link-label" font-size="7">eth2</text>
+            <text x="305" y="115" class="link-label" font-size="7">eth2</text>
+            <!-- Packet animation -->
+            <circle class="ospf-packet" r="3" opacity="0.8">
+              <animate attributeName="cx" values="150;370;150" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="cy" values="120;120;120" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- R1-R2 link (diagonal) -->
+          <g id="g-link-r1-r2" onmouseenter="showTooltip(evt, 'R1 ↔ R2', '10.0.12.0/30 · R1=.1, R2=.2 · eth1↔eth1')" onmouseleave="hideTooltip()" onclick="filterByLink('link-r1-r2')">
+            <line id="link-r1-r2" class="link-line active" x1="150" y1="145" x2="260" y2="280"/>
+            <rect x="185" y="195" width="60" height="14" class="link-label-bg" opacity="0.9"/>
+            <text x="215" y="205" class="link-label">10.0.12.0/30</text>
+            <text x="155" y="170" class="link-label" font-size="7">eth1</text>
+            <text x="245" y="275" class="link-label" font-size="7">eth1</text>
+            <circle class="ospf-packet" r="3" opacity="0.8">
+              <animate attributeName="cx" values="150;260;150" dur="2.8s" repeatCount="indefinite"/>
+              <animate attributeName="cy" values="145;280;145" dur="2.8s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- R2-R3 link (diagonal) -->
+          <g id="g-link-r2-r3" onmouseenter="showTooltip(evt, 'R2 ↔ R3', '10.0.23.0/30 · R2=.1, R3=.2 · eth2↔eth1')" onmouseleave="hideTooltip()" onclick="filterByLink('link-r2-r3')">
+            <line id="link-r2-r3" class="link-line active" x1="260" y1="280" x2="370" y2="145"/>
+            <rect x="285" y="195" width="60" height="14" class="link-label-bg" opacity="0.9"/>
+            <text x="315" y="205" class="link-label">10.0.23.0/30</text>
+            <text x="275" y="275" class="link-label" font-size="7">eth2</text>
+            <text x="355" y="170" class="link-label" font-size="7">eth1</text>
+            <circle class="ospf-packet" r="3" opacity="0.8">
+              <animate attributeName="cx" values="260;370;260" dur="3s" repeatCount="indefinite"/>
+              <animate attributeName="cy" values="280;145;280" dur="3s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- Failover path indicator (hidden by default) -->
+          <path id="path-r1-r3-r2" d="M 150 120 Q 260 80 370 120 Q 315 200 260 280" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="8,4" opacity="0" style="transition: opacity 0.5s;"/>
+
+          <!-- R1 Node -->
+          <g class="router-node" id="R1" onmouseenter="showTooltip(evt, 'R1', 'Router ID: 1.1.1.1 · Lo: 1.1.1.1 · BDR on R1-R2 link')" onmouseleave="hideTooltip()" onclick="filterByNode('R1')">
+            <circle class="router-bg" cx="150" cy="120" r="26" fill="var(--panel-2)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="150" y="124" class="router-label">R1</text>
+            <text x="150" y="100" class="router-sub">1.1.1.1</text>
+          </g>
+
+          <!-- R3 Node -->
+          <g class="router-node" id="R3" onmouseenter="showTooltip(evt, 'R3', 'Router ID: 3.3.3.3 · Lo: 3.3.3.3 · BDR on R1-R3 link')" onmouseleave="hideTooltip()" onclick="filterByNode('R3')">
+            <circle class="router-bg" cx="370" cy="120" r="26" fill="var(--panel-2)" stroke="var(--warn)" stroke-width="2"/>
+            <text x="370" y="124" class="router-label">R3</text>
+            <text x="370" y="100" class="router-sub">3.3.3.3</text>
+          </g>
+
+          <!-- R2 Node -->
+          <g class="router-node" id="R2" onmouseenter="showTooltip(evt, 'R2', 'Router ID: 10.50.0.2 · Lo: 10.50.0.2 · DR on R1-R2 link')" onmouseleave="hideTooltip()" onclick="filterByNode('R2')">
+            <circle class="router-bg" cx="260" cy="280" r="26" fill="var(--panel-2)" stroke="var(--success)" stroke-width="2"/>
+            <text x="260" y="284" class="router-label">R2</text>
+            <text x="260" y="320" class="router-sub">10.50.0.2</text>
+          </g>
+
+          <!-- Area 0 label -->
+          <text x="260" y="350" text-anchor="middle" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" letter-spacing="0.1em">BACKBONE AREA 0</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Task Matrix -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Task Stability Matrix</div>
+        <div style="display:flex;gap:0.875rem;font-size:0.7rem;color:var(--text-dim);align-items:center;">
+          <span><span class="task-status stable-pass"></span> Stable pass</span>
+          <span><span class="task-status mixed"></span> Mixed</span>
+          <span><span class="task-status stable-fail"></span> Stable fail</span>
+        </div>
+      </div>
+      <div class="task-matrix" id="task-matrix">
+        {% for task_id, passes in r.per_task_passes.items() %}
+        {% set task = r.tasks | selectattr('id', 'equalto', task_id) | first %}
+        {% set pct = (passes / r.n_runs * 100) %}
+        {% set rate_class = 'perfect' if pct == 100 else ('good' if pct >= 50 else 'poor') %}
+        {% set status_class = 'stable-pass' if passes == r.n_runs else ('mixed' if passes > 0 else 'stable-fail') %}
+        {% set topo = task.topology if task else none %}
+        <div class="task-cell {{ status_class }}"
+             id="cell-{{ task_id }}"
+             data-task-id="{{ task_id }}"
+             data-topo-type="{{ topo.type if topo else '' }}"
+             data-topo-primary="{{ topo.primary if topo else '' }}"
+             onclick="selectTask('{{ task_id }}')"
+             onmouseenter="highlightTopology('{{ topo.primary if topo else '' }}', '{{ topo.type if topo else '' }}')"
+             onmouseleave="clearTopologyHighlight()">
+          <div class="task-id">
+            {{ task_id }}
+            <span class="task-status {{ status_class }}"></span>
+          </div>
+          <div class="task-name">{{ task.task if task else task_id }}</div>
+          <div class="task-sparkline" id="spark-{{ task_id }}"></div>
+          <div class="task-footer">
+            <span class="task-rate {{ rate_class }}">{{ "%.0f"|format(pct) }}%</span>
+            <span class="task-topo-badge">{{ topo.type if topo else '—' }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="diff-breakdown">
+        {% set easy_tasks = r.tasks | selectattr('difficulty', 'equalto', 'easy') | list %}
+        {% set med_tasks = r.tasks | selectattr('difficulty', 'equalto', 'medium') | list %}
+        {% set hard_tasks = r.tasks | selectattr('difficulty', 'equalto', 'hard') | list %}
+        <div class="diff-item">
+          <div class="diff-val" style="color:var(--easy);">
+            {{ "%.0f"|format(easy_tasks | map(attribute='id') | map('extract', r.per_task_passes) | map('div', r.n_runs) | map('mul', 100) | sum / easy_tasks | length) if easy_tasks else 0 }}%
+          </div>
+          <div class="diff-label">Direct lookup</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-val" style="color:var(--medium);">
+            {{ "%.0f"|format(med_tasks | map(attribute='id') | map('extract', r.per_task_passes) | map('div', r.n_runs) | map('mul', 100) | sum / med_tasks | length) if med_tasks else 0 }}%
+          </div>
+          <div class="diff-label">Interpretation</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-val" style="color:var(--hard);">
+            {{ "%.0f"|format(hard_tasks | map(attribute='id') | map('extract', r.per_task_passes) | map('div', r.n_runs) | map('mul', 100) | sum / hard_tasks | length) if hard_tasks else 0 }}%
+          </div>
+          <div class="diff-label">Multi-step reasoning</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kept separate from the benchmark prompt: this is for post-run study. -->
+  <section class="panel learning-panel" id="learning-panel">
+    <div class="panel-header">
+      <div class="panel-title">Selected Task · CCNA Breakdown</div>
+      <div class="learning-header-note">◇ Post-run learning layer</div>
+    </div>
+    <div class="learning-content" id="learning-content">
+      <div class="selection-hint">Select a task above to see what it tests and how to read the network evidence.</div>
+    </div>
+  </section>
+
+  <footer>
+    NetOps Agent Benchmark · {{ r.n_runs }} runs · σ = {{ "%.2f"|format(r.stdev) }} · {{ r.display_timestamp or "No timestamp" }}
+  </footer>
+
+</div>
+
+<script>
+  // ==================== Data ====================
+  const tasks = {{ r.tasks | tojson | safe if r.tasks else '[]' }};
+  const perTaskPasses = {{ r.per_task_passes | tojson | safe }};
+  const nRuns = {{ r.n_runs }};
+  const taskAttempts = {{ r.task_attempts | tojson | safe if r.task_attempts else '{}' }};
+  const trajectorySource = {{ r.trajectory_source | tojson | safe if r.trajectory_source else '"unavailable"' }};
+
+  const taskLearning = {
+    t01: {
+      expected: '2 OSPF neighbors.',
+      concept: 'OSPF neighbor relationships and adjacency count.',
+      reading: "Run 'show ip ospf neighbor' on R1 and count the neighbor rows. Each row represents one directly connected OSPF neighbor, not every router in the area.",
+      trap: 'Counting the header, counting routers learned through another neighbor, or confusing neighbors with routes.',
+      takeaway: 'An OSPF neighbor is directly connected on an OSPF-enabled link. A router can know about more routers than it has neighbors.'
+    },
+    t02: {
+      expected: 'VyOS 2026.06.10-0053-rolling.',
+      concept: 'Device inventory and operational verification.',
+      reading: "Run 'show version' on R2 and use the displayed VyOS version string. This is device state, so it should be verified rather than remembered.",
+      trap: 'Answering from configuration notes or using the model name instead of the installed software version.',
+      takeaway: 'Operational commands describe what is running now; configuration files describe intended state. Network troubleshooting starts by separating those two.'
+    },
+    t03: {
+      expected: 'R1 interface eth1 is up.',
+      concept: 'Physical and data-link interface state.',
+      reading: "Run 'show interfaces ethernet eth1' on R1. UP and LOWER_UP show that the interface is administratively enabled and has an active lower-layer link.",
+      trap: 'Using an invalid abbreviated command or confusing an enabled interface with a working routing protocol adjacency.',
+      takeaway: 'An interface can be up while a routing neighbor is down. Layer 1/2 status and Layer 3 protocol status are separate checks.'
+    },
+    t04: {
+      expected: "R3's OSPF router ID is 3.3.3.3.",
+      concept: 'The local OSPF router ID.',
+      reading: "Run 'show ip ospf' on R3. The Router ID shown for the OSPF process identifies R3 itself.",
+      trap: "Using 'Neighbor ID' from the neighbor table. Neighbor ID identifies the remote router, not the router where the command was run.",
+      takeaway: 'A router ID is a 32-bit OSPF identifier written like an IPv4 address. It is not necessarily the address of the link being examined.'
+    },
+    t05: {
+      expected: 'R1 is running OSPF with router ID 1.1.1.1.',
+      concept: 'Identifying the routing protocol and its local router ID.',
+      reading: "'show ip ospf' states both that the OSPF process is running and which router ID the local process uses.",
+      trap: "The earlier model repeatedly used 'show ip ospf neighbor' and reported the first remote Neighbor ID as R1's own ID.",
+      takeaway: 'Use the protocol process output for the local identity; use the neighbor table for remote identities. This distinction is small but fundamental.'
+    },
+    t06: {
+      expected: 'R2 is the OSPF Designated Router on the R1–R2 link.',
+      concept: 'OSPF Designated Router (DR) and Backup Designated Router (BDR) election.',
+      reading: "In 'show ip ospf interface', State describes the local router. State DR means local is the DR; State Backup means local is the BDR. In 'show ip ospf neighbor', Full/DR describes the neighbor.",
+      trap: "The model found the correct DR interface address, 10.0.12.2, but called R1 the DR even though R1's local interface state was Backup. That address belongs to R2.",
+      takeaway: 'Highest OSPF interface priority wins; equal priorities are broken by highest router ID. Elections are non-preemptive, so a later router does not automatically replace the current DR.'
+    },
+    t07: {
+      expected: '3 OSPF-learned destination routes have a next hop through another router.',
+      concept: 'Reading OSPF-learned routes in the routing table.',
+      reading: "Use 'show ip route ospf' on R2 and count only routes whose next hop is another router. Do not count directly connected networks as learned routes.",
+      trap: 'Counting every OSPF-related line, including connected networks or multiple next hops for one prefix, without checking what the question defines as a route.',
+      takeaway: 'A route is a destination prefix. The next hop tells the router where to send traffic; connected networks require no neighboring router as next hop.'
+    },
+    t08: {
+      expected: "R3's interface toward R2 is 10.0.23.2.",
+      concept: 'Mapping an interface address to the correct end of a link.',
+      reading: 'Inspect the R3 interface connected to R2. On 10.0.23.0/30, the topology assigns one usable address to each end of the link.',
+      trap: "Returning the subnet address, R2's address, or an OSPF router ID instead of R3's link-interface address.",
+      takeaway: 'A /30 has four addresses: network, two usable hosts, and broadcast. Router IDs and interface addresses serve different purposes.'
+    },
+    t09: {
+      expected: 'Yes. R1 reaches 10.50.0.2 through next hop 10.0.12.2.',
+      concept: 'Routing-table reachability and next-hop selection.',
+      reading: "Check R1's routing table for 10.50.0.2. A matching route establishes control-plane reachability; the via address is the next hop.",
+      trap: 'Saying yes merely because R2 is an OSPF neighbor, or giving the destination address as the next hop.',
+      takeaway: 'Routers forward using the most specific matching route. The destination, prefix, outgoing interface, and next hop are different fields.'
+    },
+    t10: {
+      expected: 'Match — both routers use hello 10s and dead 40s.',
+      concept: 'OSPF hello/dead timer compatibility across a link.',
+      reading: 'Check the OSPF interface output on both ends of the R1-R2 link. Compare hello with hello and dead with dead; both values must match for the adjacency to form.',
+      trap: 'Checking only one router, comparing the wrong interfaces, or assuming timers match because the interfaces are up.',
+      takeaway: 'OSPF neighbors must agree on key parameters. Hello and dead timers are a classic cause of neighbors remaining down.'
+    },
+    t11: {
+      expected: 'Yes. After reconvergence, R1 can reach R2 through R3.',
+      concept: 'OSPF redundancy, alternate paths, and convergence.',
+      reading: 'Use the triangle topology and routing evidence to determine whether R1 can reach R2 through R3 after the direct R1-R2 link fails.',
+      trap: 'Looking only at the current best route and missing an alternate topology path, or claiming failover without verifying that OSPF advertises the destination across it.',
+      takeaway: 'After a failure, OSPF removes the lost adjacency, runs SPF again, and installs the best remaining path. Physical redundancy matters only when routing can use it.'
+    },
+    t12: {
+      expected: '1.1.1.1, 10.50.0.2, and 3.3.3.3.',
+      concept: 'OSPF area membership and Link-State Database (LSDB) visibility.',
+      reading: 'Use the area 0 OSPF database and collect the advertising router IDs. Those IDs represent OSPF routers known in the area, not interface addresses.',
+      trap: 'Listing neighbor addresses from one link, omitting the local router, or mixing router IDs with link-interface addresses.',
+      takeaway: 'The LSDB gives routers a shared view of an area. Router LSAs identify routers by router ID, allowing SPF to build the topology.'
+    }
+  };
+
+  // ==================== Animated Counters ====================
+  function animateCounter(id, target, decimals, suffix = '') {
+    const el = document.getElementById(id);
+    const duration = 1500;
+    const start = performance.now();
+    function update(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const val = (target * ease).toFixed(decimals);
+      el.textContent = val + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  animateCounter('score-counter', {{ r.mean }}, 1);
+  animateCounter('stdev-counter', {{ r.stdev }}, 2);
+  animateCounter('pass-counter', {{ (r.mean / r.n_tasks * 100) }}, 0, '%');
+
+  // ==================== Chronological per-run pass segments ====================
+  function generatePassSegments() {
+    tasks.forEach(t => {
+      const container = document.getElementById('spark-' + t.id);
+      if (!container) return;
+      const passes = perTaskPasses[t.id] || 0;
+      const total = nRuns;
+      const attempts = taskAttempts[t.id] || [];
+      const hasRunOrder = attempts.length === total;
+      container.title = hasRunOrder
+        ? `${passes}/${total} passes · bars are runs 1–${total} from left to right`
+        : `${passes}/${total} passes · trajectory order unavailable`;
+      for (let i = 0; i < total; i++) {
+        const attempt = hasRunOrder ? attempts[i] : null;
+        const isPass = attempt ? attempt.success : i < passes;
+        const bar = document.createElement('div');
+        bar.className = 'spark-bar ' + (isPass ? 'pass' : 'fail') + (attempt ? ' linked' : '');
+        bar.style.height = '100%';
+        bar.title = attempt ? `Run ${attempt.run}: ${isPass ? 'pass' : 'fail'}` : '';
+        if (attempt) {
+          bar.addEventListener('click', event => {
+            event.stopPropagation();
+            selectTask(t.id, attempt.run);
+          });
+        }
+        container.appendChild(bar);
+      }
+    });
+  }
+  generatePassSegments();
+
+  // ==================== Topology Interactivity ====================
+  const tooltip = document.getElementById('topo-tooltip');
+  const ttTitle = document.getElementById('tt-title');
+  const ttBody = document.getElementById('tt-body');
+
+  function showTooltip(evt, title, body) {
+    ttTitle.textContent = title;
+    ttBody.textContent = body;
+    tooltip.classList.add('visible');
+    const rect = evt.target.getBoundingClientRect();
+    const wrapRect = document.querySelector('.topology-wrap').getBoundingClientRect();
+    tooltip.style.left = (rect.left - wrapRect.left + rect.width / 2 - 100) + 'px';
+    tooltip.style.top = (rect.top - wrapRect.top - 70) + 'px';
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('visible');
+  }
+
+  function highlightTopology(primary, type) {
+    if (!primary) return;
+    // Dim everything
+    document.querySelectorAll('.router-node').forEach(n => n.classList.add('dimmed'));
+    document.querySelectorAll('.link-line').forEach(l => l.classList.add('dimmed'));
+
+    // Highlight target
+    if (type === 'node' || type === 'interface') {
+      const node = document.getElementById(primary);
+      if (node) {
+        node.classList.remove('dimmed');
+        node.classList.add('highlighted');
+      }
+      // Also highlight connected links for interfaces
+      if (type === 'interface' && primary === 'R1') {
+        document.getElementById('link-r1-r2')?.classList.remove('dimmed');
+        document.getElementById('link-r1-r3')?.classList.remove('dimmed');
+      }
+    } else if (type === 'link') {
+      const link = document.getElementById(primary);
+      if (link) {
+        link.classList.remove('dimmed');
+        link.classList.add('highlighted');
+      }
+      // Highlight connected nodes
+      const map = {'link-r1-r2': ['R1','R2'], 'link-r2-r3': ['R2','R3'], 'link-r1-r3': ['R1','R3']};
+      (map[primary] || []).forEach(nid => {
+        const n = document.getElementById(nid);
+        if (n) { n.classList.remove('dimmed'); n.classList.add('highlighted'); }
+      });
+    } else if (type === 'path') {
+      if (primary === 'path-r1-r3-r2') {
+        document.getElementById('path-r1-r3-r2').style.opacity = '0.6';
+        ['R1','R3','R2'].forEach(nid => {
+          const n = document.getElementById(nid);
+          if (n) { n.classList.remove('dimmed'); n.classList.add('highlighted'); }
+        });
+        document.getElementById('link-r1-r3')?.classList.remove('dimmed');
+        document.getElementById('link-r2-r3')?.classList.remove('dimmed');
+      } else if (primary === 'path-r1-r2') {
+        document.getElementById('link-r1-r2')?.classList.remove('dimmed');
+        document.getElementById('link-r1-r2')?.classList.add('highlighted');
+        ['R1','R2'].forEach(nid => {
+          const n = document.getElementById(nid);
+          if (n) { n.classList.remove('dimmed'); n.classList.add('highlighted'); }
+        });
+      }
+    } else if (type === 'area') {
+      document.querySelectorAll('.router-node').forEach(n => {
+        n.classList.remove('dimmed');
+        n.classList.add('highlighted');
+      });
+      document.querySelectorAll('.link-line').forEach(l => l.classList.remove('dimmed'));
+    }
+  }
+
+  function clearTopologyHighlight() {
+    document.querySelectorAll('.router-node').forEach(n => {
+      n.classList.remove('dimmed', 'highlighted');
+    });
+    document.querySelectorAll('.link-line').forEach(l => {
+      l.classList.remove('dimmed', 'highlighted');
+    });
+    document.getElementById('path-r1-r3-r2').style.opacity = '0';
+  }
+
+  function filterByNode(nodeId) {
+    document.querySelectorAll('.task-cell').forEach(cell => {
+      const type = cell.dataset.topoType;
+      const primary = cell.dataset.topoPrimary;
+      const match = (type === 'node' || type === 'interface') && primary === nodeId;
+      cell.classList.toggle('dimmed', !match);
+    });
+  }
+
+  function filterByLink(linkId) {
+    document.querySelectorAll('.task-cell').forEach(cell => {
+      const type = cell.dataset.topoType;
+      const primary = cell.dataset.topoPrimary;
+      const match = type === 'link' && primary === linkId;
+      cell.classList.toggle('dimmed', !match);
+    });
+  }
+
+  function resetFilter() {
+    document.querySelectorAll('.task-cell').forEach(c => c.classList.remove('dimmed'));
+    clearTopologyHighlight();
+  }
+
+  // Keep a clicked task visually selected without implying a stored transcript.
+  function selectTask(taskId, requestedRun = null) {
+    document.querySelectorAll('.task-cell').forEach(c => c.classList.remove('selected'));
+    document.getElementById('cell-' + taskId)?.classList.add('selected');
+    renderLearning(taskId, requestedRun);
+    document.getElementById('learning-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function renderLearning(taskId, requestedRun = null) {
+    const task = tasks.find(t => t.id === taskId);
+    const learning = taskLearning[taskId];
+    const content = document.getElementById('learning-content');
+    if (!task || !learning || !content) return;
+
+    const passes = perTaskPasses[taskId] || 0;
+    const pct = Math.round((passes / nRuns) * 100);
+    const statusClass = passes === nRuns ? 'stable-pass' : (passes > 0 ? 'mixed' : 'stable-fail');
+    const statusLabel = passes === nRuns ? 'Stable pass' : (passes > 0 ? 'Mixed result' : 'Stable fail');
+    const attempts = taskAttempts[taskId] || [];
+    const attempt = requestedRun === null
+      ? attempts[attempts.length - 1]
+      : attempts.find(item => item.run === requestedRun);
+
+    content.innerHTML = `
+      <div class="learning-intro">
+        <div>
+          <div class="learning-task-id">${escapeHtml(taskId)} · ${escapeHtml(task.difficulty)}</div>
+          <div class="learning-question">${escapeHtml(task.task)}</div>
+        </div>
+        <div class="learning-result ${statusClass}">${statusLabel} · ${pct}%</div>
+      </div>
+      ${renderAttemptSection(taskId, learning, attempts, attempt)}
+      <div class="learning-grid">
+        ${learningCard('What this tests', learning.concept)}
+        ${learningCard('How to read the evidence', learning.reading)}
+        ${learningCard('Common model trap', learning.trap)}
+        ${learningCard('CCNA takeaway', learning.takeaway)}
+      </div>
+      <div class="learning-disclosure"><strong>Evaluation boundary:</strong> This is a post-run explanation for the reader. It was not included in the task or shown to the agent while this benchmark was collected.</div>
+    `;
+  }
+
+  function renderAttemptSection(taskId, learning, attempts, attempt) {
+    if (!attempt) {
+      return `
+        <div class="attempt-section">
+          <div class="answer-grid">
+            ${answerCard('Expected answer', learning.expected, 'expected')}
+            ${answerCard('Agent answer', 'No trajectory from this baseline is available.', 'agent fail')}
+          </div>
+          <div class="attempt-summary">Future benchmark records will link each run directly to its saved trajectory.</div>
+        </div>
+      `;
+    }
+
+    const runButtons = attempts.map(item => `
+      <button class="run-step ${item.success ? 'pass' : 'fail'} ${item.run === attempt.run ? 'active' : ''}"
+              onclick="renderLearning('${escapeHtml(taskId)}', ${item.run})"
+              title="Run ${item.run}: ${item.success ? 'pass' : 'fail'}">${item.run}</button>
+    `).join('');
+    const commands = attempt.commands.length
+      ? attempt.commands.map((command, index) => commandBlock(command, index)).join('')
+      : '<div class="answer-text">No live tool command was recorded for this attempt.</div>';
+
+    return `
+      <div class="attempt-section">
+        <div class="attempt-toolbar">
+          <div class="attempt-label">Baseline attempts · selected run ${attempt.run} of ${nRuns} · green pass / red fail</div>
+          <div class="stepper" aria-label="Select an attempt for this task">${runButtons}</div>
+        </div>
+        <div class="answer-grid">
+          ${answerCard('Expected answer', learning.expected, 'expected')}
+          ${answerCard('Agent answer', attempt.answer, `agent ${attempt.answer_status === 'pass' ? 'pass' : 'fail'}`)}
+        </div>
+        <div class="verdict-grid">
+          ${verdict('Answer check', attempt.answer_status)}
+          ${verdict('Evidence check', attempt.evidence_status)}
+        </div>
+        <div class="attempt-summary">${escapeHtml(attempt.summary)}</div>
+        <div class="learning-grid" style="margin-bottom:0.75rem;">
+          ${learningCard('What went right', whatWentRight(attempt))}
+          ${learningCard('What went wrong', whatWentWrong(attempt))}
+        </div>
+        <div class="learning-card-title">Commands and observed evidence</div>
+        <div class="command-list">${commands}</div>
+        <div class="attempt-meta">${escapeHtml(trajectorySource)} · prompt ${escapeHtml(attempt.prompt_hash || 'unknown')} · ${attempt.iterations} model turn(s) · ${attempt.empty_response_retries} empty-response retry/retries</div>
+      </div>
+    `;
+  }
+
+  function whatWentRight(attempt) {
+    const parts = [];
+    if (attempt.commands.length) {
+      parts.push(`The agent queried live VyOS state with ${attempt.commands.length} tool command${attempt.commands.length === 1 ? '' : 's'}.`);
+    }
+    if (attempt.answer_status === 'pass') parts.push('Its final answer matched the expected answer.');
+    if (attempt.evidence_status === 'pass') parts.push('Its supporting evidence also satisfied the grader.');
+    return parts.length ? parts.join(' ') : 'No graded step passed in this attempt.';
+  }
+
+  function whatWentWrong(attempt) {
+    if (attempt.success) return 'No graded error was recorded in this attempt.';
+    if (attempt.answer === '<NO ANSWER>') {
+      return `The model returned no final answer after ${attempt.empty_response_retries} empty-response retry/retries.`;
+    }
+    if (attempt.failure_reason === 'missing_or_invalid_evidence') {
+      return 'The answer text was acceptable, but the required live command or output evidence was missing or invalid.';
+    }
+    return 'The final answer did not match the expected answer. Compare the two answers and the command output above.';
+  }
+
+  function answerCard(title, body, classes) {
+    return `<div class="answer-card ${classes}"><div class="learning-card-title">${escapeHtml(title)}</div><div class="answer-text">${escapeHtml(body)}</div></div>`;
+  }
+
+  function verdict(title, status) {
+    const label = status === 'not-evaluated' ? 'Not evaluated' : status;
+    return `<div class="verdict"><span>${escapeHtml(title)}</span><span class="verdict-value ${status}">${escapeHtml(label.toUpperCase())}</span></div>`;
+  }
+
+  function commandBlock(command, index) {
+    const device = command.device ? `${command.device} · ` : '';
+    const heading = `${index + 1}. ${device}${command.command || command.name}`;
+    return `<div class="command-block"><div class="command-heading">${escapeHtml(heading)}</div><pre class="command-output">${escapeHtml(command.output)}</pre></div>`;
+  }
+
+  function learningCard(title, body) {
+    return `<div class="learning-card"><div class="learning-card-title">${escapeHtml(title)}</div><div class="learning-card-body">${escapeHtml(body)}</div></div>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[char]);
+  }
+
+</script>
+
+</body>
+</html>

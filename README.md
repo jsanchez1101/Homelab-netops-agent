@@ -5,8 +5,10 @@ A local LLM agent that operates a virtualized network lab over SSH. A 3B model
 them against VyOS routers via netmiko, and reasons over the output. No API calls,
 no cloud inference, no per-token cost.
 
-Baseline: **8.0 ± 1.22 / 12** across 5 runs of a 12-task benchmark against the
-running lab.
+Baseline status: **corrected 10-run baseline complete: 6.0/12 mean (50%),
+standard deviation 0.82, range 5–7.** Earlier scores were invalidated by
+answer-bearing inventory descriptions, permissive substring checks, and a
+temporary mismatch between YAML ground truth and the live R2 state.
 
 ---
 
@@ -33,7 +35,7 @@ running lab.
         └──────────────────┘
                  │
                  ▼
-        "R1 has 2 OSPF neighbors (2.2.2.2, 3.3.3.3)."
+        "R1 has 2 OSPF neighbors (10.50.0.2, 3.3.3.3)."
 ```
 
 No agent framework. System prompt plus tool schemas go to the model; the model
@@ -58,55 +60,49 @@ sits on an isolated `10.99.0.0/24` subnet advertised into a Tailscale mesh by
 node2, so the lab is reachable across the tailnet without exposing it to the home
 LAN. Addressing and build steps in [`TOPOLOGY.md`](TOPOLOGY.md).
 
-## Baseline results
+## Evaluation status
 
-12 tasks, ground truth derived from the topology and checked programmatically
-(exact or regex match against the model's answer).
+The benchmark has 12 training/development tasks plus five held-out question
+variants. A pass now requires two independent conditions:
 
-A 3B model at temperature 0.2 varies meaningfully run to run, so the benchmark is
-executed 5× and reported as a distribution rather than a single score.
+1. the first answer line satisfies a task-specific validator; and
+2. the trajectory contains a successful, task-appropriate VyOS command whose
+   output supports the conclusion.
 
-**8.0 ± 1.22 / 12 (67%)** — range 6–9 across 5 runs.
+This replaced permissive substring checks that could accept a wrong answer merely
+because the explanation mentioned the expected device. It also prevents an
+unsupported guess after an invalid command from becoming a positive SFT example.
 
-| Task stability | Tasks | Count |
-|---|---|---|
-| Stable pass (5/5) | t01, t02, t03, t06, t12 | 5 |
-| Flaky (1–4 of 5) | t04, t05, t07, t08, t09, t10 | 6 |
-| Stable fail (0/5) | t11 | 1 |
+The held-out variants use the same live topology, so they measure command and
+evidence transfer to new questions. They do **not** prove generalization to unseen
+network facts. That stronger experiment requires a second topology or a deliberate
+live-state change with separately captured ground truth.
 
-A single run is not a measurement. Identical runs of this benchmark scored
-between 6 and 9, so comparing one run against another cannot distinguish a real
-change from noise. `run_evals_multi.py` reports mean, standard deviation, and
-per-task pass rate, and flags when a session-over-session delta is smaller than
-the observed run-to-run spread.
+Earlier reported scores are retained only as historical artifacts and must not be
+used as the fine-tuning baseline. The corrected baseline was captured over 10 runs
+with the current task definitions and neutral inventory; scores were 7, 5, 6, 7,
+6, 5, 6, 6, 7, and 5 (approximate 95% interval: 5.49–6.51 tasks).
 
-Each run takes about 3 minutes at ~40 tok/s on an M2 via Metal.
+`run_evals_multi.py` reports the score distribution, per-task pass rate, and an
+approximate 95% confidence interval. Each run takes about 3 minutes at ~40 tok/s
+on an M2 via Metal.
 
-## Where it fails
+## Observed failure modes
 
-The failures split into two kinds, and the distinction determines what to do
-about them.
+- Wrong VyOS syntax followed by repeated retries or an unsupported guess.
+- Correct facts paired with irrelevant evidence, such as deriving an OSPF router
+  ID from `show version`.
+- Incorrect semantic extraction from valid output, especially DR versus backup.
+- Counterfactual reasoning without inspecting the OSPF link-state database.
 
-**Consistency, not capability (6 tasks).** t04, t05, t07, t08, t09, and t10 each
-pass at least once — the model demonstrably can do them — but not reliably. t07
-and t08 are the weakest at 1/5. These don't require new knowledge; they require
-the model to do reliably what it already does occasionally.
-
-**A genuine ceiling (1 task).** t11 fails 5/5. It's a counterfactual — "if the
-R1–R2 link failed, would R1 still reach R2?" — requiring the model to simulate a
-failure and trace an alternate path. The answer isn't present in any single
-command's output. The model answers from priors without gathering evidence. This
-is the one that needs a stronger teacher, not more consistency.
-
-A prompt fix during this work moved t03 from failing to stable pass by stating
-the VyOS interface syntax (`show interfaces ethernet <name>`) explicitly —
-evidence that some failures are scaffold gaps rather than model limits.
+The explicit `show interfaces ethernet <name>` prompt hint is still useful, but
+syntax knowledge and evidence-grounded reasoning are measured separately now.
 
 ## Design notes
 
 **The allowlist is enforced in code, not the prompt.** The model is treated as
 untrusted input. The system prompt says read-only, but prompts are suggestions to
-a model; the `startswith("show ")` check in the executor is not. If the model
+a model; the executor requires a single CLI line beginning with `show `. If the model
 hallucinates a configuration command, or is prompt-injected by content in device
 output, the executor refuses. Same trust boundary as parameterized SQL versus
 trusting user input.
@@ -127,20 +123,19 @@ character limit; smarter truncation is an open improvement.
 - [x] Agent loop, tool-calling, read-only allowlist
 - [x] 3-router VyOS OSPF lab (EVE-NG, Tailscale-routed management plane)
 - [x] 12-task benchmark with programmatic ground truth
-- [x] Multi-run harness — baseline 8.0 ± 1.22 / 12 with per-task stability
+- [x] Evidence-aware evaluators and explicit train/holdout trajectory provenance
+- [x] Multi-run harness with confidence intervals and same-suite comparisons
+- [x] Fresh 10-run baseline after evaluator repair (6.0/12 mean)
 - [ ] Self-distillation: fine-tune on the agent's own successful trajectories to
       convert the six flaky tasks into stable passes
 - [ ] Teacher distillation for t11: collect a stronger model's verified
       trajectories on the counterfactual task and test whether the reasoning
       pattern transfers
 
-The stability breakdown reframes the distillation target. Most lost points are
-consistency, not missing capability — successful trajectories already exist for
-every flaky task, so self-distillation has material to work with. t11 is the only
-task with no successful example to learn from, and is the sole candidate for
-teacher distillation. Success will be measured by re-running the same 5× harness:
-a real improvement has to move the mean by more than the 1.22 run-to-run spread,
-and ideally shrink that spread as well. A negative result is also a result.
+Only trajectories accepted by the repaired answer and evidence validators are
+eligible for export. Legacy records, holdout runs, invalid tool transcripts, and
+the original answer-bearing inventory prompt are excluded. Fine-tuning should not
+start until a new clean baseline and training export exist.
 
 ## Setup
 
@@ -155,17 +150,48 @@ pip install requests pyyaml netmiko
 
 # 3. Configure
 cp devices.yaml.example devices.yaml   # router IPs + credentials
-# edit config.yaml -> base_url to point at the Ollama endpoint
+cp config.yaml config.local.yaml        # ignored private runtime settings
+# edit config.local.yaml -> base_url to point at the Ollama endpoint
 
 # 4. Run
 python agent.py "How many OSPF neighbors does R1 have?"
-python run_evals.py                  # single run
-python run_evals_multi.py 5 --quiet  # 5 runs, mean ± stdev, stability table
+python run_evals.py                            # training/dev suite, single run
+python run_evals_multi.py 10 --quiet           # clean baseline distribution
+python run_evals_multi.py 10 --tasks holdout.yaml --quiet
+python -m unittest discover -s tests -v
+python export_sft.py                          # verified training split only
 ```
+
+### Smoke inventory versus evaluation inventory
+
+`devices.yaml` is the neutral inventory used by normal agent runs and required by
+both evaluation scripts. Its descriptions identify devices and intended links but
+do not reveal router IDs, addresses, or expected answers.
+
+For end-to-end integration debugging, create the ignored rich inventory once:
+
+```bash
+cp devices.smoke.yaml.example devices.smoke.yaml
+# add the real local credentials, then run:
+LAB_AGENT_INVENTORY=devices.smoke.yaml python agent.py "What devices are in the lab?"
+```
+
+The rich smoke descriptions intentionally expose topology facts. Evaluation
+scripts refuse to start while `LAB_AGENT_INVENTORY` selects that file, preventing
+the integration fixture from leaking into benchmark results.
 
 Any SSH-reachable device that speaks `show` commands works — point
 `devices.yaml` at it. The endpoint is OpenAI-compatible, so swapping the local
 model for a cloud API is a one-line config change.
+
+### Publishing safely
+
+`devices.yaml`, `devices.smoke.yaml`, and `config.local.yaml` are private runtime
+files and are ignored by Git. Keep real device passwords, model endpoints, API
+keys, and Tailscale addresses out of tracked examples and screenshots. The
+bootstrap configs contain an explicit password placeholder that must be replaced
+locally before use. Crop browser chrome from public dashboard screenshots so a
+tailnet address, account name, tabs, and bookmarks are not exposed.
 
 ## Repository
 
@@ -178,6 +204,7 @@ model for a cloud API is a one-line config change.
 | `evals/tasks.yaml` | Benchmark tasks with programmatic checks and ground truth |
 | `configs/R*.txt` | VyOS bootstrap configs for the three routers |
 | `devices.yaml.example` | Device inventory template |
+| `devices.smoke.yaml.example` | Rich integration-test inventory; never used for evaluation |
 | `config.yaml` | Model endpoint and agent settings |
 | `TOPOLOGY.md` | Lab diagram, addressing plan, build steps |
 
