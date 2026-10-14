@@ -265,3 +265,7 @@ Do not expose an unauthenticated Ollama listener to an untrusted network. The ex
 ## Related
 
 [DNS Exfiltration Detector](https://github.com/jsanchez1101/DNS-Exfiltration-Detector): classical ML on DNS query windows, including an audit that found the benchmark dataset's attack captures contain no exfiltration queries.
+
+## License
+
+Original project code and documentation are available under the [MIT License](LICENSE). See [license scope and third-party materials](THIRD_PARTY_NOTICES.md) for exclusions and attribution boundaries.
